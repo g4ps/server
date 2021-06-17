@@ -1,3 +1,7 @@
+#include <string>
+#include <iostream>
+#include <sstream>
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -7,6 +11,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <errno.h>
+
+using namespace std;
 
 /*
   funciton: log
@@ -18,10 +24,9 @@
   need to change only this function;
  */
 
-void serv_log(const char *str)
+void serv_log(std::string out)
 {
-  //С++
-  printf("%s\n", str);
+  std::cout<<out<<std::endl;
 }
 
 /*
@@ -39,7 +44,7 @@ struct sockaddr_in*
 get_address_from_hostname(const char *host, unsigned short port)
 {
   struct addrinfo hints;
-  memset(&hints, 0, sizeof(struct addrinfo));
+  memset(&hints, 0, sizeof(addrinfo));
   hints.ai_family = AF_INET;
   struct addrinfo *res = NULL;
   struct addrinfo *i = NULL;
@@ -52,15 +57,15 @@ get_address_from_hostname(const char *host, unsigned short port)
   struct sockaddr_in *p = NULL;
   for (i = res; i != NULL; i++) {
     if (i->ai_family == AF_INET) {
-      p = (struct sockaddr_in *)res->ai_addr;
+      p = (sockaddr_in *)res->ai_addr;
       break;
     }
   }
   if (p == NULL) {
     return NULL;
   }
-  struct sockaddr_in* ret = (struct sockaddr_in*)calloc(sizeof(struct sockaddr_in), 1);
-  memcpy(ret, p, sizeof(struct sockaddr_in));
+  struct sockaddr_in* ret = new sockaddr_in;
+  memcpy(ret, p, sizeof(sockaddr_in));
   ret->sin_port = htons(port);
   freeaddrinfo(res);
   return ret;
@@ -105,45 +110,39 @@ int init_serv(struct sockaddr_in *addr)
   //C++ exceptions
 }
 
-char* init_page()
+std::string
+init_page()
 {
-  char *ret = "HTTP/1.1 404 Not Found"
-    "Date: Thu, 17 Jun 2021 16:36:52 GMT"
-    "Server: Apache/2.4.48 (Unix) OpenSSL/1.1.1k PHP/8.0.7"
-    "Vary: accept-language,accept-charset"
-    "Accept-Ranges: bytes"
-    "Transfer-Encoding: chunked"
-    "Content-Type: text/html; charset=utf-8"
-    "Content-Language: en"
-    "<html>"
-    "<head>"
-    "<title>Object not found!</title>"
-    "</head>"
-    "<body>"
-    "<h1>Objectnot found!</h1>"
-    "<p>"
-    "   The requested URL was not found on this server."
-    "   If you entered the URL manually please check your"
-    "   spelling and try again."
-    "</p>"
-    "</body>"
-    "</html>";
-  char *r = malloc(1000);
-  bzero(r, 1000);
-  strcpy(r, ret);
-  return r;
+  string head =
+    string("HTTP/1.1 200 OK\r\n") +
+    "Server: nginx/1.20.0\r\n" +
+    "Date: Thu, 17 Jun 2021 20:30:59 GMT\r\n" +
+    "Content-Type: text/html\r\n" +
+    //"Transfer-Encoding: chunked\r\n" +
+    "Connection: keep-alive\r\n";
+
+  string body = string("<html>\r\n") +
+    "<head><title>My very own html resopnce</title></head>\r\n" +
+    "<body>\r\n" +
+    "<h1>  YEAH BABY</h1>\r\n" +
+    "<hr></body>\r\n" +
+    "</html>\r\n";
+  stringstream ss;
+  ss << "Content-Length: " << body.length() << "\r\n\r\n";
+  head += ss.str();
+  return head + body;
 }
 
 int
 main(int argc, char **argv)
 {
   unsigned short port = 8001;
-  const char *host = "localhost";
+  std::string host = "localhost";
   if (argc == 2) {
     host = argv[1];
   }
   struct sockaddr_in* my_addr;
-  my_addr = get_address_from_hostname(host, port);
+  my_addr = get_address_from_hostname(host.c_str(), port);
 
   if (my_addr == NULL) {
     printf("No such address\n");
@@ -151,22 +150,24 @@ main(int argc, char **argv)
   }
   char str[BUFSIZ];
   char res[BUFSIZ];
-  sprintf(res, "Initializing server on address %s (name: %s, port %d)",
-	  inet_ntop(AF_INET, &my_addr->sin_addr, str, INET_ADDRSTRLEN), host,
-	  port);
-  serv_log(res);  
+  stringstream s;
+  s << "Initializing server on address " << inet_ntop(AF_INET, &my_addr->sin_addr, str, INET_ADDRSTRLEN)
+       << " (name: \"" << host << "\" port: " <<  port << ")";
+  serv_log(s.str());  
   int sock_fd = init_serv(my_addr);
   if (sock_fd < 0)
     return 1;
   int new_sock = accept(sock_fd, NULL, NULL);
-  char *msg = "Fuck\n";
-  char *r = init_page();
+  string r = init_page();
   char buf[512];
   int n;
   while ((n = read(new_sock, buf, 512)) != 0) {
     write(1, buf, n);
+    break;
   }
-  write(new_sock, r, strlen(r) + 1);
+  cout<<r;
+  write(new_sock, r.c_str(), r.length());
+  close(new_sock);
   free(my_addr);
   return 0;
 }

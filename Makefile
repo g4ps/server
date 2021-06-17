@@ -1,2 +1,2 @@
-a.out: main.c
-	gcc -g main.c
+a.out: main.cpp
+	g++ -std=c++98 -g main.cpp
