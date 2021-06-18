@@ -18,6 +18,7 @@
 
 #include "parse_help.hpp"
 #include "http_message.hpp"
+#include "server.hpp"
 
 using namespace std;
 
@@ -25,9 +26,6 @@ void serv_log(std::string out)
 {
   std::cout<<out<<std::endl;
 }
-				      
-
-
 
 /*
   function: get_address_from_hostname returns sockaddr_in (ipv4) for 
@@ -81,8 +79,6 @@ get_address_from_hostname(const char *host, unsigned short port)
   and already listening
  */
 
-
-
 int init_serv(struct sockaddr_in *addr)
 {
   int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -113,7 +109,7 @@ int init_serv(struct sockaddr_in *addr)
 }
 
 std::string
-init_page()
+test_page()
 {
   string head =
     string("HTTP/1.1 200 OK\r\n") +
@@ -121,7 +117,7 @@ init_page()
     "Date: Thu, 17 Jun 2021 20:30:59 GMT\r\n" +
     "Content-Type: text/html\r\n" +
     //"Transfer-Encoding: chunked\r\n" +
-    "Connection: keep-alive\r\n";
+    "Connection: closed\r\n";
 
   string body = string("<html>\r\n") +
     "<head><title>My very own html resopnce</title></head>\r\n" +
@@ -130,53 +126,41 @@ init_page()
     "<hr></body>\r\n" +
     "</html>\r\n";
   stringstream ss;
-  ss << "Content-Length: " << body.length() << "\r\n\r\n";
-  head += ss.str();
+  //ss << "Content-Length: " << body.length() << "\r\n\r\n";
+  //head += ss.str();
+  head += "\r\n";
   return head + body;
 }
 
 int
 main(int argc, char **argv)
 {
+  serv_log("Eugene's HTTP server v0.1");
   unsigned short port = 8001;
   std::string host = "localhost";
   if (argc == 2) {
     host = argv[1];
   }
-  struct sockaddr_in* my_addr;
-  my_addr = get_address_from_hostname(host.c_str(), port);
-  if (my_addr == NULL) {
-    printf("No such address\n");
-    exit(0);
-  }
-  char str[500];
-  stringstream s;
-  s << "Initializing server on address " << inet_ntop(AF_INET, &my_addr->sin_addr, str, INET_ADDRSTRLEN)
-       << " (name: \"" << host << "\" port: " <<  port << ")";
-  serv_log(s.str());  
-  int sock_fd = init_serv(my_addr);
-  if (sock_fd < 0)
-    return 1;
-  //  fcntl(sock_fd, F_SETFL, O_NONBLOCK);
-  int new_sock;
-  new_sock = accept(sock_fd, NULL, NULL);
-  string r = init_page();
-  char buf[512];
-  bzero(buf, 512);
-  int n;
-  while ((n = read(new_sock, buf, 512)) != 0) {
-    //    write(1, buf, n);
-    break;
-  }
+  serv_log("Initializing server:");
+  serv_log("----------------------------------------");
+  http_server s1;
   try {
-    http_message test(buf);
-    test.print();
+    s1.add_socket_from_hostname("vc", 8001);
+    s1.add_socket("127.0.0.1", 8001);
+
   }
-  catch(exception& e) {
-    cout<<e.what()<<endl;
+  catch(exception &e) {
+    serv_log(string("INIT ERROR: ") + e.what());
+    exit(1);
   }
-  write(new_sock, r.c_str(), r.length());
-  close(new_sock);
-  delete my_addr;
+  serv_log("----------------------------------------");
+  serv_log("STARTING");
+  try {
+    s1.start();
+  }
+  catch(exception &e) {
+    serv_log(string("RUNTIME ERROR: ") + e.what());
+    exit(1);
+  }
   return 0;
 }

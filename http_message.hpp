@@ -26,12 +26,12 @@ private:
 public:
   http_message();
   http_message(string s);
-  void parse_raw_data(string s);
+  void parse_raw_head(string s);
   class invalid_state: public exception {
   public:    
     const char* what() const throw()
     {
-      return "Invalid  HTTP message";
+      return "Invalid HTTP message";
     }
   };
   void print() const;

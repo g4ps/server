@@ -14,13 +14,13 @@ http_message::http_message()
 
 http_message::http_message(string s)
 {
-  parse_raw_data(s);
+  parse_raw_head(s);
 }
 
 /*
   needed for quick initialization of the class by easy stuff
  */
-void http_message::parse_raw_data(string inp)
+void http_message::parse_raw_head(string inp)
 {
   //CRLF as string for simple usage
   string crlf = "\r\n";
@@ -81,6 +81,7 @@ void http_message::parse_raw_data(string inp)
     //str_to_lower(field_value);
     header_lines.insert(make_pair(field_name, field_value));
   }
+  serv_log("Header parsing was successfull");
 }
 
 /*
