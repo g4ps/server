@@ -1,4 +1,20 @@
+NAME = webserv
 
+HEAD = http_message.hpp parse_help.hpp
 
-a.out: main.cpp parse_help.cpp
-	g++ -std=c++98 -g main.cpp parse_help.cpp
+SRCS = main.cpp parse_help.cpp http_message.cpp
+
+OBJS := $(SRCS:.cpp=.o)
+
+#CPPFLAGS += -Wall -Werror -Wextra
+CPPFLAGS += -g -std=c++98
+CPP = g++
+
+$(NAME): $(OBJS) $(HEAD)
+	$(CPP) $(CFLAGS) $(OBJS) -o $(NAME)
+
+clean:
+	-rm $(OBJS)
+
+fclean: clean
+	-rm $(NAME)
