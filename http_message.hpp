@@ -16,7 +16,7 @@ class http_message
   string raw;
   string start_line;
   multimap<string, string> header_lines;
-  vector<char> body;
+  vector<char> body; 
 private:
   //private methods
   string get_token(string &str) const;
@@ -35,6 +35,10 @@ public:
     }
   };
   void print() const;
+  //bool is_request() const; //TODO implement, whe i will make uri shit happen
+  string get_method() const;
+  string get_request_target() const;
+  string get_http_version() const;
 };
 
 #endif
