@@ -146,8 +146,9 @@ main(int argc, char **argv)
   http_server s1;
   try {
     s1.add_socket_from_hostname("vc", 8001);
+    s1.add_socket_from_hostname("vc", 8002);
     s1.add_socket("127.0.0.1", 8001);
-
+    s1.add_socket("127.0.0.1", 8002);
   }
   catch(exception &e) {
     serv_log(string("INIT ERROR: ") + e.what());

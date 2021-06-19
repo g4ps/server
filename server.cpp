@@ -153,7 +153,9 @@ void http_server::start()
 	  serv_log(string("accept error: ") + strerror(errno));
 	  throw process_error();
 	}
-	serv_log("Connection established");
+	stringstream s;
+	s << "Connection established on fd (" << ns << ")";
+	serv_log(s.str());
 	http_server::serve(ns);
       }
     }
@@ -206,5 +208,7 @@ void http_server::serve(int fd)
     cout<<"ERROR: "<<e.what()<<endl;
   }
   close(fd);
-  serv_log("Connection closed");
+  stringstream s;
+  s << "Connection closed on socket (" << fd << ")";
+  serv_log(s.str());
 }
