@@ -19,6 +19,7 @@
 #include "parse_help.hpp"
 #include "http_message.hpp"
 #include "server.hpp"
+#include "http_webserv.hpp"
 
 using namespace std;
 
@@ -129,30 +130,6 @@ int init_serv(struct sockaddr_in *addr)
   //C++ exceptions
 }
 
-std::string
-test_page()
-{
-  string head =
-    string("HTTP/1.1 200 OK\r\n") +
-    "Server: nginx/1.20.0\r\n" +
-    "Date: Thu, 17 Jun 2021 20:30:59 GMT\r\n" +
-    "Content-Type: text/html\r\n" +
-    //"Transfer-Encoding: chunked\r\n" +
-    "Connection: closed\r\n";
-
-  string body = string("<html>\r\n") +
-    "<head><title>My very own html resopnce</title></head>\r\n" +
-    "<body>\r\n" +
-    "<h1>  YEAH BABY</h1>\r\n" +
-    "<hr></body>\r\n" +
-    "</html>\r\n";
-  stringstream ss;
-  //ss << "Content-Length: " << body.length() << "\r\n\r\n";
-  //head += ss.str();
-  head += "\r\n";
-  return head + body;
-}
-
 int
 main(int argc, char **argv)
 {
@@ -162,14 +139,16 @@ main(int argc, char **argv)
   if (argc == 2) {
     host = argv[1];
   }
+  http_webserv w1;
   serv_log("Initializing server:");
   serv_log("----------------------------------------");
-  http_server s1;
   try {
+    http_server s1;
     s1.add_socket_from_hostname("vc", 8001);
     s1.add_socket_from_hostname("vc", 8002);
     s1.add_socket("127.0.0.1", 8001);
     s1.add_socket("127.0.0.1", 8002);
+    w1.add_server(s1);
   }
   catch(exception &e) {
     serv_log(string("INIT ERROR: ") + e.what());
@@ -178,7 +157,7 @@ main(int argc, char **argv)
   serv_log("----------------------------------------");
   serv_log("STARTING");
   try {
-    s1.start();
+    w1.start();
   }
   catch(exception &e) {
     serv_log(string("RUNTIME ERROR: ") + e.what());

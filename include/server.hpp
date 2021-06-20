@@ -8,6 +8,8 @@
 #include <map>
 #include <vector>
 #include <exception>
+#include <list>
+#include <deque>
 
 #include <stdio.h>
 #include <string.h>
@@ -23,16 +25,27 @@
 
 #include "parse_help.hpp"
 #include "http_message.hpp"
+#include "http_request.hpp"
 
 using namespace std;
+
+struct error_page
+{
+  list<int> err_num;
+  string page;
+};
 
 class http_server
 {
 private:
-  vector<int> sock_fds;
+  deque<int> sock_fds;
+  map<string, string> locations;
+  string redirect;
+  bool auto_index;
+  list<error_page> error_pages;
+  list<string> default_pages;
 private:
-  //private methods
-  
+  //private methods  
 public:
   class init_error: public exception {
     const char* what() const throw()
@@ -46,19 +59,29 @@ public:
       return "Something went terribly wrong";
     }
   };
+  class header_error: public exception {
+    const char* what() const throw()
+    {
+      return "Bad header input";
+    }
+  };
   void add_socket(string addr, short port);
   void add_socket(sockaddr_in*);
-  void start();
+  //  void start();
   void serve(int fd);
   size_t num_of_sockets() const;
-  #ifdef NOT_SHIT
+#ifdef NOT_SHIT
   //Because god hates french people
   void add_socket_from_hostname(string host, short port);
-  void process_request(http_message& msg);
-  void process_get_request(http_message &msg);
-  void process_not_found(http_message &req);
-  void send_status_code(http_message&, int code);
-  #endif
+#endif
+  void process_request(http_request& msg);
+  void process_get_request(http_request &msg);
+  void process_not_found(http_request &req);
+  void send_status_code(http_request&, int code);
+  void send_timeout(int fd);
+  bool has_socket(int fd);
+  deque<int>& get_sockets();
+  string get_header_string(int fd);
 };
 
 string test_page();

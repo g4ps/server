@@ -1,8 +1,12 @@
 NAME = webserv
 
-HEAD = http_message.hpp parse_help.hpp server.hpp http_responce.hpp
+HEAD_DIR = include/
+HEAD = http_message.hpp parse_help.hpp server.hpp http_responce.hpp http_webserv.hpp
+HEAD := $(HEAD:%$(HEAD_DIR):%)
 
-SRCS = main.cpp parse_help.cpp http_message.cpp server.cpp http_responce.cpp
+SRCS_DIR = srcs/
+SRCS = main.cpp parse_help.cpp http_message.cpp server.cpp http_responce.cpp http_request.cpp http_webserv.cpp
+SRCS := $(SRCS:%=$(SRCS_DIR)%)
 
 OBJS := $(SRCS:.cpp=.o)
 
@@ -10,7 +14,7 @@ OBJS := $(SRCS:.cpp=.o)
 CPPFLAGS += -g -std=c++98
 
 #includes
-CPPFLAGS += -I.
+CPPFLAGS += -I. -I$(HEAD_DIR)
 
 CPPFLAGS += -DNOT_SHIT
 

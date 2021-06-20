@@ -30,8 +30,8 @@ protected:
   string get_field_content(string &s) const;  
 public:
   http_message();
-  http_message(string s, int inp_fd = -1);
-  void parse_raw_head(string s, int inp_fd = -1);
+  //http_message(string s, int inp_fd = -1);
+  //  void parse_raw_head(string s, int inp_fd = -1);
   class invalid_state: public exception {
   public:    
     const char* what() const throw()
@@ -40,15 +40,21 @@ public:
     }
   };
   void print() const;
+  ///////////////////////////////////////////////////
+  // Supposed to be in different class  
+  ///////////////////////////////////////////////////
   string get_method() const;
   string get_request_target() const;
   string get_http_version() const;
+  //////////////////////////////////////////////////
   void set_socket(int fd);
   int get_socket();
   void set_start_line(string l);
   virtual string& get_start_line();
   void add_header_field(string name, string val);
   string compose_header_fields();
+  //maybe i should rename it
+  pair<bool, string> get_header_value(string name);
 };
 
 #endif

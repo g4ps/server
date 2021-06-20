@@ -6,6 +6,7 @@
 #include <map>
 #include <vector>
 #include <exception>
+#include <cstring>
 
 #include <stdio.h>
 #include <string.h>
@@ -22,6 +23,7 @@
 #include "parse_help.hpp"
 #include "http_message.hpp"
 #include "http_responce.hpp"
+#include "http_request.hpp"
 #include "server.hpp"
 
 using namespace std;
@@ -126,84 +128,53 @@ size_t http_server::num_of_sockets() const
   return sock_fds.size();
 }
 
-void http_server::start()
-{
-  size_t num = num_of_sockets();
-  pollfd *fdarr = new pollfd[num];
-  while (1) {
-    for (size_t i = 0; i < num; i++) {
-      fdarr[i].fd = sock_fds[i];
-      fdarr[i].events = 0;
-      fdarr[i].events |= POLLRDNORM;
-    }
-    if (poll(fdarr, num, -1) == -1) {
-      serv_log(string("poll ERROR: ") + strerror(errno));
-      throw process_error();
-    }
-    for (size_t i = 0; i < num; i++) {
-      if (fdarr[i].revents & POLLERR) {
-	serv_log(string("poll ERROR: ") + strerror(errno));
-	throw process_error();
-      }
-      if (fdarr[i].revents & POLLRDNORM) {
-	int ns = accept(fdarr[i].fd, NULL, NULL);
-	if (fcntl(ns, F_SETFL, O_NONBLOCK) == -1) {
-	  serv_log(string("fcntl error: ") + strerror(errno));
-	  throw process_error();
-	}
-	if (ns == -1) {
-	  serv_log(string("accept error: ") + strerror(errno));
-	  throw process_error();
-	}
-	stringstream s;
-	s << "Connection established on fd (" << ns << ")";
-	serv_log(s.str());
-	http_server::serve(ns);
-      }
-    }
-  }
-}
-
+// void http_server::start()
+// {
+//   size_t num = num_of_sockets();
+//   pollfd *fdarr = new pollfd[num];
+//   while (1) {
+//     for (size_t i = 0; i < num; i++) {
+//       fdarr[i].fd = sock_fds[i];
+//       fdarr[i].events = 0;
+//       fdarr[i].events |= POLLRDNORM;
+//     }
+//     if (poll(fdarr, num, -1) == -1) {
+//       serv_log(string("poll ERROR: ") + strerror(errno));
+//       throw process_error();
+//     }
+//     for (size_t i = 0; i < num; i++) {
+//       if (fdarr[i].revents & POLLERR) {
+// 	serv_log(string("poll ERROR: ") + strerror(errno));
+// 	throw process_error();
+//       }
+//       if (fdarr[i].revents & POLLRDNORM) {
+// 	int ns = accept(fdarr[i].fd, NULL, NULL);
+// 	if (fcntl(ns, F_SETFL, O_NONBLOCK) == -1) {
+// 	  serv_log(string("fcntl error: ") + strerror(errno));
+// 	  throw process_error();
+// 	}
+// 	if (ns == -1) {
+// 	  serv_log(string("accept error: ") + strerror(errno));
+// 	  throw process_error();
+// 	}
+// 	stringstream s;
+// 	s << "Connection established on fd (" << ns << ")";
+// 	serv_log(s.str());
+// 	http_server::serve(ns);
+//       }
+//     }
+//   }
+// }
 
 void http_server::serve(int fd)
 {
-  string inp;
-  char buf[BUFSIZ];
-  bzero(buf, BUFSIZ);
-  ssize_t n;
-  pollfd fdarr;
-  fdarr.fd = fd;
-  fdarr.events = 0;
-  fdarr.events |= POLLIN;
-  while (1) {
-    if (poll(&fdarr, 1, 5000) <= 0)
-      break;
-    if (fdarr.revents & POLLERR) {
-      serv_log(string("poll ERROR: ") + strerror(errno));
-      throw process_error();
-    }
-    else if (!(fdarr.revents & POLLIN)) {
-      serv_log(string("poll ERROR: ") + strerror(errno));
-      throw process_error();
-    }
-    n = read(fd, buf, 4);
-    if (n < 0) {
-      serv_log("Read error: ");
-      #ifdef NOT_SHIT
-      serv_log(strerror(errno));
-      #endif
-      throw process_error();
-      return ;
-    }
-    inp.append(buf, n);
-    if (inp.find("\r\n\r\n") != string::npos)
-      break;
-  }
+  //get time;
   try {
-    http_message req(inp, fd);
+    http_request req(fd);
     req.print();
     //string kk = test_page();
     //write(fd, kk.c_str(), kk.length());
+    //if (req.is_incomplete(req);
     process_request(req);
   }
   catch (exception &e) {
@@ -215,7 +186,7 @@ void http_server::serve(int fd)
   serv_log(s.str());
 }
 
-void http_server::process_request(http_message& msg)
+void http_server::process_request(http_request& msg)
 {
   string type = msg.get_method();
   if (type == "GET") {
@@ -226,8 +197,10 @@ void http_server::process_request(http_message& msg)
   }
 }
 
-void http_server::process_get_request(http_message& req)
+void http_server::process_get_request(http_request& req)
 {
+  //TODO
+  //make it normal
   string file_name = "html" + req.get_request_target();
   if (file_name[file_name.length() - 1] == '/')
     file_name += "index.html";
@@ -249,15 +222,77 @@ void http_server::process_get_request(http_message& req)
   resp.write_responce();  
 }
 
-void http_server::process_not_found(http_message &req)
+void http_server::process_not_found(http_request &req)
 {
   http_responce resp(404);
   resp.set_socket(req.get_socket());
   resp.write_responce();
 }
 
-void http_server::send_status_code(http_message &req, int code)
+void http_server::send_status_code(http_request &req, int code)
 {
   if (code == 404)
     process_not_found(req);
 }
+
+void http_server::send_timeout(int fd)
+{
+}
+
+bool http_server::has_socket(int fd)
+{
+  deque<int>::const_iterator it;
+  for (it = sock_fds.begin(); it != sock_fds.end(); it++) {
+    if (*it == fd)
+      return true;
+  }
+  return false;
+}
+
+deque<int>& http_server::get_sockets()
+{
+  return sock_fds;
+}
+
+// string get_header_string(int fd)
+// {
+//   string inp;
+//   char buf[BUFSIZ];
+//   bzero(buf, BUFSIZ);
+//   ssize_t n;
+//   pollfd fdarr;
+//   fdarr.fd = fd;
+//   fdarr.events = 0;
+//   fdarr.events |= POLLIN;
+//   while (inp.find("\r\n\r\n") == string::npos) {
+//     if (poll(&fdarr, 1, 5000) <= 0) {
+//       close(fd);
+//       throw header_error();
+//     }
+//     if (fdarr.revents & POLLERR) {
+//       serv_log(string("poll ERROR: ") + strerror(errno));
+//       close(fd);
+//       throw process_error();
+//     }
+//     else if (!(fdarr.revents & POLLIN)) {
+//       serv_log(string("poll ERROR: ") + strerror(errno));
+//       close(fd);
+//       throw process_error();
+//     }
+//     n = read(fd, buf, BUFSIZ);
+//     if (n < 0) {
+//       serv_log("Read error: ");
+//       #ifdef NOT_SHIT
+//       serv_log(strerror(errno));
+//       #endif
+//       close(fd);
+//       throw header_error();
+//     }
+//     if (memchr(buf, '\0', n) != NULL) {
+//       serv_log("Got \\0 in header");
+//       close(fd);
+//       throw header_error();
+//     }
+//     inp.append(buf, n);
+//   }
+// }
