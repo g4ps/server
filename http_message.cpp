@@ -12,18 +12,20 @@ http_message::http_message()
 {
 }
 
-http_message::http_message(string s)
+http_message::http_message(string s, int inp_fd)
 {
-  parse_raw_head(s);
+  parse_raw_head(s, inp_fd);
 }
 
 /*
   needed for quick initialization of the class by easy stuff
  */
-void http_message::parse_raw_head(string inp)
+void http_message::parse_raw_head(string inp, int inp_fd)
 {
   //CRLF as string for simple usage
   string crlf = "\r\n";
+
+  sock_fd = inp_fd;
 
   //getting start_line
   //start line BNF: request-line / status-line
@@ -205,4 +207,35 @@ string http_message::get_http_version() const
     throw invalid_state();
   }
   return start_line.substr(pos + 1, tpos - pos - 1);
+}
+
+
+void http_message::set_socket(int fd)
+{
+  sock_fd = fd;
+}
+
+void http_message::add_header_field(string name, string val)
+{
+  header_lines.insert(make_pair(name, val));
+}
+
+string& http_message::get_start_line() //maybe i should make it const
+{
+  return start_line;
+}
+
+string http_message::compose_header_fields()
+{
+  string ret;
+  for (multimap<string, string>::const_iterator i = header_lines.begin(); i != header_lines.end(); i++) {
+    ret +=  i->first  + ": " +  i->second +  "\r\n";
+  }
+  return ret;
+}
+
+
+int http_message::get_socket()
+{
+  return sock_fd;
 }

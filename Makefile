@@ -1,8 +1,8 @@
 NAME = webserv
 
-HEAD = http_message.hpp parse_help.hpp server.hpp
+HEAD = http_message.hpp parse_help.hpp server.hpp http_responce.hpp
 
-SRCS = main.cpp parse_help.cpp http_message.cpp server.cpp
+SRCS = main.cpp parse_help.cpp http_message.cpp server.cpp http_responce.cpp
 
 OBJS := $(SRCS:.cpp=.o)
 

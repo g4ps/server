@@ -54,6 +54,10 @@ public:
   #ifdef NOT_SHIT
   //Because god hates french people
   void add_socket_from_hostname(string host, short port);
+  void process_request(http_message& msg);
+  void process_get_request(http_message &msg);
+  void process_not_found(http_message &req);
+  void send_status_code(http_message&, int code);
   #endif
 };
 

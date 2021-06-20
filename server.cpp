@@ -1,6 +1,7 @@
 #include <string>
 #include <fcntl.h>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <map>
 #include <vector>
@@ -20,6 +21,7 @@
 
 #include "parse_help.hpp"
 #include "http_message.hpp"
+#include "http_responce.hpp"
 #include "server.hpp"
 
 using namespace std;
@@ -198,11 +200,11 @@ void http_server::serve(int fd)
       break;
   }
   try {
-    http_message req(inp);
+    http_message req(inp, fd);
     req.print();
-    string kk = test_page();
-    kk.length();
-    write(fd, kk.c_str(), kk.length());
+    //string kk = test_page();
+    //write(fd, kk.c_str(), kk.length());
+    process_request(req);
   }
   catch (exception &e) {
     cout<<"ERROR: "<<e.what()<<endl;
@@ -211,4 +213,51 @@ void http_server::serve(int fd)
   stringstream s;
   s << "Connection closed on socket (" << fd << ")";
   serv_log(s.str());
+}
+
+void http_server::process_request(http_message& msg)
+{
+  string type = msg.get_method();
+  if (type == "GET") {
+    process_get_request(msg);  
+  }
+  else {    
+    send_status_code(msg, 505);
+  }
+}
+
+void http_server::process_get_request(http_message& req)
+{
+  string file_name = "html" + req.get_request_target();
+  if (file_name[file_name.length() - 1] == '/')
+    file_name += "index.html";
+  ifstream inp_file;
+  inp_file.open(file_name.c_str());
+  if (!inp_file.good()) {
+    send_status_code(req, 404);
+    return ;
+  }  
+  string output;
+  while (!inp_file.eof()) {
+    string t;
+    getline(inp_file, t);
+    output += t + "\n";
+  }
+  http_responce resp(200);
+  resp.set_body(output);
+  resp.set_socket(req.get_socket());
+  resp.write_responce();  
+}
+
+void http_server::process_not_found(http_message &req)
+{
+  http_responce resp(404);
+  resp.set_socket(req.get_socket());
+  resp.write_responce();
+}
+
+void http_server::send_status_code(http_message &req, int code)
+{
+  if (code == 404)
+    process_not_found(req);
 }

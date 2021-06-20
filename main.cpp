@@ -27,6 +27,27 @@ void serv_log(std::string out)
   std::cout<<out<<std::endl;
 }
 
+string convert_to_string(size_t arg)
+{
+  stringstream s;
+  s << arg;
+  return s.str();
+}
+
+string convert_to_string(int arg)
+{
+  stringstream s;
+  s << arg;
+  return s.str();
+}
+
+string convert_to_string(short arg)
+{
+  stringstream s;
+  s << arg;
+  return s.str();
+}
+
 /*
   function: get_address_from_hostname returns sockaddr_in (ipv4) for 
   hostname, supplied in the host argument
