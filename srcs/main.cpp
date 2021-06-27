@@ -144,11 +144,12 @@ main(int argc, char **argv)
   serv_log("----------------------------------------");
   try {
     http_server s1;
-    s1.add_socket_from_hostname("vc", 8001);
-    s1.add_socket_from_hostname("vc", 8002);
     s1.add_socket("127.0.0.1", 8001);
     s1.add_socket("127.0.0.1", 8002);
+    http_server s2;
+    s2.add_socket("0.0.0.0", 8002);
     w1.add_server(s1);
+    w1.add_server(s2);
   }
   catch(exception &e) {
     serv_log(string("INIT ERROR: ") + e.what());
