@@ -69,7 +69,7 @@ int is_tchar(char c)
 
 //FORM: 0x80 - 0xFF
 int is_obstext(char c) {
-  if (c >= 0x80 && c <= 0xff)
+  if (static_cast<int>(c) >= 0x80 && static_cast<int>(c) <= 0xff)
     return 1;
   return 0;
 }

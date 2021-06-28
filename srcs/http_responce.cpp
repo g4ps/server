@@ -60,5 +60,5 @@ void http_responce::write_responce()
     write(sock_fd, buf, n);
     body.erase(body.begin(), body.begin() + n);
   }
-  delete buf;
+  delete[] buf;
 }
