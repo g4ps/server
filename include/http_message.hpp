@@ -13,6 +13,7 @@ void serv_log(string s);
 string convert_to_string(int);
 string convert_to_string(size_t);
 string convert_to_string(short);
+string convert_to_string(off_t);
 
 class http_message
 {

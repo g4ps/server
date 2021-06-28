@@ -8,6 +8,9 @@
 #include <fcntl.h>
 #include <iostream>
 #include <cstdio>
+#include <sys/stat.h>
+#include <poll.h>
+#include <cerrno>
 
 #include "http_message.hpp"
 #include "http_responce.hpp"
@@ -42,23 +45,139 @@ void http_responce::set_body(string s)
 }
 
 void http_responce::write_responce()
-{  
+{
+  if (target_name.size() == 0) {
+    //Some static stuff, that we had put into the body
+    //Is used by default error pages and such
+    if (body.size() != 0)
+      add_header_field("Content-length", convert_to_string(body.size()));
+    // out << http_version << " " << status_code << " " << reason_phrase << "\r\n";
+    // out << compose_header_fields();
+    // string head = out.str() + "\r\n";
+    // //make it non-block and with polling
+    // write(sock_fd, head.c_str(), head.length());
+    write_head();
+    char *buf = new char[BUFSIZ];
+    while (body.size() != 0) {
+      size_t n;
+      n = BUFSIZ;
+      if (body.size() < BUFSIZ)
+	n = body.size();
+      copy(body.begin(), body.begin() + n, buf);
+      write(sock_fd, buf, n);
+      body.erase(body.begin(), body.begin() + n);
+    }
+    delete[] buf;
+  }
+  //CGI Should be processed somewhere here
+  else {
+    //Just the static pages
+    int fd = open(target_name.c_str(), O_RDONLY);
+    if (fd < 0) {
+      if (errno == EACCES) {
+	serv_log(string("Access to target \'") + target_name + "\' was denied");
+	throw target_denied();
+      }
+      else if (errno == ENOENT) {
+	serv_log(string("Couldn't find target \'") + target_name + "\'");
+	throw target_not_found();
+      }
+      else {
+	serv_log(string("open SERVER ERROR: ") + strerror(errno));
+	throw server_error();
+      }
+    }
+    char *buf = new char[BUFSIZ];
+    int n;
+    pollfd pfd;
+    struct stat st;
+    stat(target_name.c_str(), &st);
+    off_t file_size = st.st_size;
+    if (file_size != 0) {
+      add_header_field("Content-length", convert_to_string(file_size));
+      write_head();
+      if (lseek(fd, 0, SEEK_SET) < 0) {
+	serv_log(string("lseek SERVER ERROR: ") + strerror(errno));
+	throw server_error();
+      }
+      off_t ret;
+      while ((ret = lseek(fd, 0, SEEK_CUR)) != file_size) {
+	if (ret < 0) {
+	  serv_log(string("lseek SERVER ERROR: ") + strerror(errno));
+	  throw server_error();
+	}
+	pfd.fd = fd;
+	pfd.events = 0 | POLLIN;
+	poll(&pfd, 1, 0);
+	if (pfd.revents & POLLERR) {
+	  serv_log(string("poll SERVER ERROR: ") + strerror(errno));
+	  throw server_error();
+	}
+	ssize_t n;
+	ssize_t out_pace;
+	ssize_t temp = 0;
+	n = read(fd, buf, BUFSIZ);
+	while (n != 0) {
+	  out_pace = 0;
+	  pfd.fd = sock_fd;
+	  pfd.events = 0 | POLLOUT;
+	  poll(&pfd, 1, 5000); //should be replaced by server variable
+	  if (pfd.revents & POLLERR) {
+	    serv_log(string("poll SERVER ERROR: ") + strerror(errno));
+	    throw server_error();
+	  }
+	  out_pace = write(sock_fd, buf + temp, n);
+	  if (out_pace < 0) {
+	    serv_log(string("write into socket failed: ") + strerror(errno));
+	    throw server_error();
+	  }
+	  temp += out_pace;
+	  n -= out_pace;
+	}
+      }
+    }
+    else {
+      add_header_field("Content-length", 0);
+      write_head();
+    }
+    delete[] buf;
+  }
+}
+
+
+void http_responce::set_target_name(string s)
+{
+  target_name = s;  
+}
+
+string http_responce::get_target_name() const
+{
+  return target_name;
+}
+
+
+void http_responce::write_head()
+{
   stringstream out;
-  if (body.size() != 0)
-    add_header_field("Content-length", convert_to_string(body.size()));
   out << http_version << " " << status_code << " " << reason_phrase << "\r\n";
   out << compose_header_fields();
   string head = out.str() + "\r\n";
   //make it non-block and with polling
-  write(sock_fd, head.c_str(), head.length());
-  char *buf = new char[BUFSIZ];
-  while (body.size() != 0) {
-    int n;
-    for (n = 0; n < BUFSIZ && n < body.size(); n++) {
-      buf[n] = body[n];
+  pollfd pfd;
+  ssize_t n;
+  while (head.size() != 0) {
+    pfd.fd = sock_fd;
+    pfd.events = 0 | POLLOUT;
+    poll(&pfd, 1, 5000); //should be replaced by server variable
+    if (pfd.revents & POLLERR) {
+      serv_log(string("poll SERVER ERROR: ") + strerror(errno));
+      throw server_error();
     }
-    write(sock_fd, buf, n);
-    body.erase(body.begin(), body.begin() + n);
+    n = write(sock_fd, head.c_str(), head.length());
+    if (n < 0) {
+      serv_log(string("write into socket error: ") + strerror(errno));
+      throw server_error();
+    }
+    head.erase(head.begin(), head.begin() + n);
   }
-  delete[] buf;
 }

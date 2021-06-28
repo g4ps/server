@@ -35,6 +35,13 @@ string convert_to_string(size_t arg)
   return s.str();
 }
 
+string convert_to_string(off_t arg)
+{
+  stringstream s;
+  s << arg;
+  return s.str();
+}
+
 string convert_to_string(int arg)
 {
   stringstream s;

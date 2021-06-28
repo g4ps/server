@@ -82,6 +82,9 @@ public:
   bool has_socket(int fd);
   deque<int>& get_sockets();
   string get_header_string(int fd);
+  void process_error(http_request &fd, int status);
+  string get_error_target_name(string target);
+  string get_default_err_page(int status);
 };
 
 string test_page();
