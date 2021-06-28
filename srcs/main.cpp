@@ -18,7 +18,7 @@
 
 #include "parse_help.hpp"
 #include "http_message.hpp"
-#include "server.hpp"
+#include "http_server.hpp"
 #include "http_webserv.hpp"
 
 using namespace std;
