@@ -152,7 +152,6 @@ main(int argc, char **argv)
   try {
     http_server s1;
     s1.add_socket("127.0.0.1", 8001);
-    s1.add_socket("127.0.0.1", 8002);
     http_server s2;
     s2.add_socket("0.0.0.0", 8002);
     w1.add_server(s1);

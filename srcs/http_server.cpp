@@ -160,6 +160,8 @@ void http_server::process_get_request(http_request& req)
 {
   //replace this thing by normal search
   string file_name = "html" + req.get_request_target();
+  if (file_name[file_name.length() - 1] == '/')
+    file_name += "index.html";
   try {
     http_responce resp(200);
     resp.set_target_name(file_name);

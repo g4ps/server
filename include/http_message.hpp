@@ -6,6 +6,7 @@
 #include <vector>
 #include <exception>
 #include <iostream>
+#include <unistd.h>
 
 using namespace std;
 

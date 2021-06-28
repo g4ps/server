@@ -2,6 +2,7 @@
 #include <sstream>
 #include <map>
 #include <vector>
+#include <cstring>
 #include <exception>
 #include <iostream>
 #include <unistd.h>
