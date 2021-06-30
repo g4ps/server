@@ -152,6 +152,9 @@ void http_server::process_request(http_request& msg)
   if (type == "GET") {
     process_get_request(msg);  
   }
+  else if (type == "POST") {
+    process_post_request(msg);
+  }
   else {    
     process_error(msg, 501);
   }
@@ -159,6 +162,9 @@ void http_server::process_request(http_request& msg)
 
 void http_server::process_get_request(http_request& req)
 {
+  if (is_cgi_request(req.get_request_target())) {
+    process_cgi(req);
+  }
   //replace this thing by normal search
   string file_name = "html" + req.get_request_target();
   if (file_name[file_name.length() - 1] == '/')
@@ -179,6 +185,24 @@ void http_server::process_get_request(http_request& req)
     serv_log("Something went terribly wrong during get request");
   }
 }
+
+void http_server::process_cgi(http_request& req)
+{
+  int fd[2];
+  pipe(fd);
+  pid_t pid = fork();
+  if (pid == 0) {
+    char **vars = new char*[100];
+    for (int i = 0; i < 100; i++) {
+      vars[i] = NULL;
+    }
+    string temp = "CONTENT_LENGTH=";
+    temp += convert_to_string(req.get_body_size());
+    vars[0] = "AUTH_TYPE=";    
+    vars[1] = temp.c_str();
+  }
+}
+
 
 void http_server::process_error(http_request &in, int status)
 {
@@ -283,11 +307,16 @@ deque<int>& http_server::get_sockets()
   return sock_fds;
 }
 
-bool is_cgi_request(string target_name)
+bool http_server::is_cgi_request(string target_name)
 {
   //change later for config-defined parameters;
   //maybe it even shouldn't be here, i'm just trying some code exec
   if (target_name.find(".php") == target_name.length() - 4)
     return true;
   return false;
+}
+
+void http_server::process_post_request(http_request &msg)
+{
+  
 }

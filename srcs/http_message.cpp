@@ -160,54 +160,10 @@ string http_message::get_obs_fold(string &s) const
 
 void http_message::print() const
 {
-  cout<<"Method: \'" << get_method() << "\'" <<  endl;
-  cout<<"Request target: \'" << get_request_target() << "\'" << endl;
-  cout<<"HTTP version: \'" << get_http_version() << "\'" << endl;
-  for (multimap<string, string>::const_iterator i = header_lines.begin(); i != header_lines.end(); i++) {
-    cout << i->first <<": " << i->second<< "\r\n";
-  }
-  cout<<"\r\n";
+  cout << "Oh, hi there\n";
 }
 
-///maybe later i'll need to change exception class
 
-string http_message::get_method() const 
-{
-  size_t pos;
-  pos = start_line.find(' ');
-  if (pos == string::npos) {
-    serv_log("Invalid call to get_method on non-request");
-    throw invalid_state();
-  }
-  return start_line.substr(0, pos);
-}
-
-string http_message::get_request_target() const
-{
-  size_t pos;
-  size_t tpos;
-  pos = start_line.find(' ');
-  tpos = start_line.find(' ', pos + 1);
-  if (pos == string::npos || tpos == string::npos) {
-    serv_log("Invalid call to get_request_target on non-request");
-    throw invalid_state();
-  }
-  return start_line.substr(pos + 1, tpos - pos - 1);
-}
-
-string http_message::get_http_version() const
-{
-  size_t pos;
-  size_t tpos;
-  pos = start_line.find(' ');
-  pos = start_line.find(' ', pos + 1);
-  tpos = start_line.find("\r\n", pos + 1);
-  if (pos == string::npos || tpos == string::npos) {
-    serv_log("Invalid call to get_request_target on non-request");
-    throw invalid_state();
-  }
-  return start_line.substr(pos + 1, tpos - pos - 1);
-}
 
 
 void http_message::set_socket(int fd)
@@ -248,4 +204,9 @@ pair<bool, string> http_message::get_header_value(string name)
   if (it == header_lines.end())
     return pair<bool, string>(false, "");
   return pair<bool, string>(true, it->second);
+}
+
+size_t http_message::get_body_size() const
+{
+  return body.size();
 }

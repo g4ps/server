@@ -71,6 +71,7 @@ public:
 #endif
   void process_request(http_request& msg);
   void process_get_request(http_request &msg);
+  void process_post_request(http_request &msg);
   void process_not_found(http_request &req);
   void send_status_code(http_request&, int code);
   void send_timeout(int fd);
@@ -82,6 +83,7 @@ public:
   string get_error_target_name(string target);
   string get_default_err_page(int status);
   bool is_cgi_request(string target_name);
+  void process_cgi(http_request &req);
 };
 
 string test_page();

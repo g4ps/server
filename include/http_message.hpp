@@ -19,7 +19,7 @@ string convert_to_string(off_t);
 class http_message
 {
 protected:
-  string raw;
+  vector<char> raw;
   string start_line;
   multimap<string, string> header_lines;
   int sock_fd;
@@ -41,13 +41,11 @@ public:
       return "Invalid HTTP message";
     }
   };
-  void print() const;
+  virtual void print() const;
   ///////////////////////////////////////////////////
   // Supposed to be in different class  
   ///////////////////////////////////////////////////
-  string get_method() const;
-  string get_request_target() const;
-  string get_http_version() const;
+
   //////////////////////////////////////////////////
   void set_socket(int fd);
   int get_socket();
@@ -57,6 +55,7 @@ public:
   string compose_header_fields();
   //maybe i should rename it
   pair<bool, string> get_header_value(string name);
+  size_t get_body_size();
 };
 
 #endif
