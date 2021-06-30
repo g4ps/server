@@ -153,7 +153,7 @@ void http_server::process_request(http_request& msg)
     process_get_request(msg);  
   }
   else {    
-    process_error(msg, 505);
+    process_error(msg, 501);
   }
 }
 
@@ -185,6 +185,7 @@ void http_server::process_error(http_request &in, int status)
   serv_log(string("Processing error '") + convert_to_string(status) + "' on target '"
 	   + in.get_request_target() + "'");
   try {
+    
     http_responce resp(status);
     resp.set_socket(in.get_socket());
     string err_target = get_error_target_name(in.get_request_target());    
@@ -280,4 +281,13 @@ bool http_server::has_socket(int fd)
 deque<int>& http_server::get_sockets()
 {
   return sock_fds;
+}
+
+bool is_cgi_request(string target_name)
+{
+  //change later for config-defined parameters;
+  //maybe it even shouldn't be here, i'm just trying some code exec
+  if (target_name.find(".php") == target_name.length() - 4)
+    return true;
+  return false;
 }

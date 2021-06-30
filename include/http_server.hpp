@@ -29,11 +29,6 @@
 
 using namespace std;
 
-struct error_page
-{
-  list<int> err_num;
-  string page;
-};
 
 class http_server
 {
@@ -42,7 +37,7 @@ private:
   map<string, string> locations;
   string redirect;
   bool auto_index;
-  list<error_page> error_pages;
+  map<int, string> error_pages;
   list<string> default_pages;
 private:
   //private methods  
@@ -86,6 +81,7 @@ public:
   void process_error(int fd, int status);
   string get_error_target_name(string target);
   string get_default_err_page(int status);
+  bool is_cgi_request(string target_name);
 };
 
 string test_page();

@@ -40,6 +40,7 @@ http_responce::http_responce(int st)
     reason_phrase = "Not Implemented";
     break;
   default:
+    serv_log(string("Cannot set status ") + convert_to_string(st));
     throw bad_status();
     break;
   }
@@ -169,7 +170,6 @@ string http_responce::get_target_name() const
 {
   return target_name;
 }
-
 
 void http_responce::write_head()
 {
