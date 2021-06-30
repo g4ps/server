@@ -33,6 +33,12 @@ http_responce::http_responce(int st)
   case 404:
     reason_phrase = "Not Found";
     break;
+  case 400:
+    reason_phrase = "Bad Request";
+    break;
+  case 501:
+    reason_phrase = "Not Implemented";
+    break;
   default:
     throw bad_status();
     break;
@@ -50,6 +56,7 @@ void http_responce::write_responce()
   if (target_name.size() == 0) {
     //Some static stuff, that we had put into the body
     //Is used by default error pages and such
+    add_header_field("Connection", "closed");
     if (body.size() != 0)
       add_header_field("Content-length", convert_to_string(body.size()));
     // out << http_version << " " << status_code << " " << reason_phrase << "\r\n";
@@ -72,6 +79,7 @@ void http_responce::write_responce()
   }
   //CGI Should be processed somewhere here
   else {
+    add_header_field("Connection", "closed");
     //Just the static pages
     int fd = open(target_name.c_str(), O_RDONLY);
     if (fd < 0) {
@@ -99,6 +107,7 @@ void http_responce::write_responce()
       write_head();
       if (lseek(fd, 0, SEEK_SET) < 0) {
 	serv_log(string("lseek SERVER ERROR: ") + strerror(errno));
+	close(fd);
 	throw server_error();
       }
       off_t ret;
@@ -112,6 +121,7 @@ void http_responce::write_responce()
 	poll(&pfd, 1, 0);
 	if (pfd.revents & POLLERR) {
 	  serv_log(string("poll SERVER ERROR: ") + strerror(errno));
+	  close(fd);
 	  throw server_error();
 	}
 	ssize_t n;
@@ -125,19 +135,23 @@ void http_responce::write_responce()
 	  poll(&pfd, 1, 5000); //should be replaced by server variable
 	  if (pfd.revents & POLLERR) {
 	    serv_log(string("poll SERVER ERROR: ") + strerror(errno));
+	    close(fd);
 	    throw server_error();
 	  }
 	  out_pace = write(sock_fd, buf + temp, n);
 	  if (out_pace < 0) {
 	    serv_log(string("write into socket failed: ") + strerror(errno));
+	    close(fd);
 	    throw server_error();
 	  }
 	  temp += out_pace;
 	  n -= out_pace;
 	}
       }
+      close(fd);
     }
     else {
+      add_header_field("Connection", "closed");
       add_header_field("Content-length", 0);
       write_head();
     }

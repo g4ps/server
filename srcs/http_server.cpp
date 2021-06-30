@@ -137,6 +137,7 @@ void http_server::serve(int fd)
     process_request(req);
   }
   catch (exception &e) {
+    process_error(fd, 400);
     cout<<"ERROR: "<<e.what()<<endl;
   }
   close(fd);
@@ -152,7 +153,7 @@ void http_server::process_request(http_request& msg)
     process_get_request(msg);  
   }
   else {    
-    send_status_code(msg, 505);
+    process_error(msg, 505);
   }
 }
 
@@ -201,6 +202,21 @@ void http_server::process_error(http_request &in, int status)
   }
 }
 
+void http_server::process_error(int in, int status)
+{
+  serv_log(string("Processing error '") + convert_to_string(status) + "' on this socket");
+  try {
+    http_responce resp(status);
+    resp.set_socket(in);
+    resp.set_body(get_default_err_page(status));
+    resp.write_responce();
+  }
+  //Maybe i should make exception handling a little bit more sophisticated
+  catch(exception &e) {
+    serv_log("Something went wrong with writing error page");
+  }
+}
+
 string http_server::get_default_err_page(int status)
 {
   //If i'll ever get to making this project myself,
@@ -210,7 +226,7 @@ string http_server::get_default_err_page(int status)
   string ret;
   ret += "<html>\n";
   ret += "  <head>\n";
-  ret += "    <title>\n";
+  ret += "    <title>";
   ret += convert_to_string(status);
   //Maybe should add here reasoning
   ret += " Error</title>\n";
