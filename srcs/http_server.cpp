@@ -192,7 +192,7 @@ void http_server::process_cgi(http_request& req)
   pipe(fd);
   pid_t pid = fork();
   if (pid == 0) {
-    char **vars = new char*[100];
+    const char **vars = new const char*[100];
     for (int i = 0; i < 100; i++) {
       vars[i] = NULL;
     }

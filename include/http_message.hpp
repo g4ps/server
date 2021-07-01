@@ -55,7 +55,7 @@ public:
   string compose_header_fields();
   //maybe i should rename it
   pair<bool, string> get_header_value(string name);
-  size_t get_body_size();
+  size_t get_body_size() const;
 };
 
 #endif
