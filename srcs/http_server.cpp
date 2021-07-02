@@ -7,6 +7,7 @@
 #include <vector>
 #include <exception>
 #include <cstring>
+#include <sys/wait.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -128,13 +129,13 @@ size_t http_server::num_of_sockets() const
   return sock_fds.size();
 }
 
-void http_server::serve(int fd)
+void http_server::serve(int fd, sockaddr_in addr)
 {
   //get time;
   try {
     http_request req(fd);
     req.print();
-    process_request(req);
+    process_request(req, addr);
   }
   catch (exception &e) {
     process_error(fd, 400);
@@ -146,8 +147,11 @@ void http_server::serve(int fd)
   serv_log(s.str());
 }
 
-void http_server::process_request(http_request& msg)
+void http_server::process_request(http_request& msg, sockaddr_in addr)
 {
+  if (is_cgi_request(msg.get_request_target())) {
+    process_cgi(msg, addr);
+  }
   string type = msg.get_method();
   if (type == "GET") {
     process_get_request(msg);  
@@ -162,9 +166,6 @@ void http_server::process_request(http_request& msg)
 
 void http_server::process_get_request(http_request& req)
 {
-  if (is_cgi_request(req.get_request_target())) {
-    process_cgi(req);
-  }
   //replace this thing by normal search
   string file_name = "html" + req.get_request_target();
   if (file_name[file_name.length() - 1] == '/')
@@ -186,20 +187,66 @@ void http_server::process_get_request(http_request& req)
   }
 }
 
-void http_server::process_cgi(http_request& req)
+void http_server::process_cgi(http_request& req, sockaddr_in addr)
 {
-  int fd[2];
-  pipe(fd);
+  serv_log("Processing cgi");
+  int fd1[2];
+  int fd2[2];
+  pipe(fd1);
+  pipe(fd2);
   pid_t pid = fork();
   if (pid == 0) {
+    close(fd1[1]);
+    close(fd2[0]);
+    dup2(fd1[0], 0);
+    dup2(fd2[1], 1);
+    //All of the shit, concerning setting variables should exist in
+    //other function
     const char **vars = new const char*[100];
     for (int i = 0; i < 100; i++) {
       vars[i] = NULL;
     }
     string temp = "CONTENT_LENGTH=";
     temp += convert_to_string(req.get_body_size());
-    vars[0] = "AUTH_TYPE=";    
+    vars[0] = "QUERY_STRING=";    
     vars[1] = temp.c_str();
+    vars[2] = "SERVER_SOFTWARE=Eugene_server 0.1";
+    vars[3] = "SERVER_NAME=vc";
+    string temp1 = string("SERVER_PORT=") + convert_to_string(8001);
+    vars[4] = temp1.c_str();
+    string temp2 = string("REQUEST_METHOD=") + req.get_method();    
+    vars[5] = temp2.c_str();
+    vars[6] = "SERVER_PROTOCOL=HTTP/1.1";
+    string temp3 = string("PATH_INFO=") + req.get_request_target();
+    vars[7] = temp3.c_str();
+    char cad[100];
+    inet_ntop(AF_INET, &(addr.sin_addr.s_addr), cad, sizeof(sockaddr_in));
+    
+    // vars[8] = ;
+    // vars[9] = string("REMOTE_PORT=") + convert_to_string(ntohs(addr.sin_port));
+    for (int i = 0; i < 10; i++) {
+      fprintf(stderr, "%s\n", vars[i]);
+    }
+    exit(0);
+    const char *k[10];
+    k[0] = "/usr/bin/php-cgi";
+    k[1] = NULL;
+    execve("/usr/bin/php-cgi", (char* const *)k,  (char* const *)vars);
+    exit(0);
+  }
+  else {
+    close(fd1[0]);
+    close(fd2[1]);
+    const char *str =  "<?php echo \"Hello\";\n?>";
+    write(fd1[1], str, strlen(str));
+    close(fd1[1]);
+    char buf[512];
+    int n = 0;
+    while ((n = read(fd2[0], buf, 512)) != 0) {
+      write(1, buf, n);
+    }
+    int status;
+    wait(&status);
   }
 }
 
@@ -316,7 +363,9 @@ bool http_server::is_cgi_request(string target_name)
   return false;
 }
 
-void http_server::process_post_request(http_request &msg)
+void http_server::process_post_request(http_request &req)
 {
-  
+  // if (is_cgi_request(req.get_request_target())) {
+  //   process_cgi(req);
+  // }
 }

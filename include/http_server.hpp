@@ -40,7 +40,7 @@ private:
   map<int, string> error_pages;
   list<string> default_pages;
 private:
-  //private methods  
+  //private methods
 public:
   class init_error: public exception {
     const char* what() const throw()
@@ -63,13 +63,13 @@ public:
   void add_socket(string addr, short port);
   void add_socket(sockaddr_in*);
   //  void start();
-  void serve(int fd);
+  void serve(int fd, sockaddr_in addr);
   size_t num_of_sockets() const;
 #ifdef NOT_SHIT
   //Because god hates french people
   void add_socket_from_hostname(string host, short port);
 #endif
-  void process_request(http_request& msg);
+  void process_request(http_request& msg, sockaddr_in addr);
   void process_get_request(http_request &msg);
   void process_post_request(http_request &msg);
   void process_not_found(http_request &req);
@@ -83,7 +83,7 @@ public:
   string get_error_target_name(string target);
   string get_default_err_page(int status);
   bool is_cgi_request(string target_name);
-  void process_cgi(http_request &req);
+  void process_cgi(http_request &req, sockaddr_in addr);
 };
 
 string test_page();

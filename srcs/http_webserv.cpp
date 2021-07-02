@@ -31,7 +31,9 @@ void http_webserv::start()
 	throw process_error();
       }
       if (fdarr[i].revents & POLLRDNORM) {
-	int ns = accept(fdarr[i].fd, NULL, NULL);
+	sockaddr_in addr;
+	socklen_t address_size = sizeof(sockaddr_in);
+	int ns = accept(fdarr[i].fd, (sockaddr*)&addr, &address_size);
 	if (fcntl(ns, F_SETFL, O_NONBLOCK) == -1) {
 	  serv_log(string("fcntl error: ") + strerror(errno));
 	  throw process_error();
@@ -41,10 +43,15 @@ void http_webserv::start()
 	  throw process_error();
 	}
 	http_server& corr = find_server_with_socket(fdarr[i].fd);
+	char cbuf[100];
 	stringstream s;
 	s << "Connection established on fd (" << ns << ")";
+	s << " from host "
+	  << inet_ntop(AF_INET,
+		       &(addr.sin_addr.s_addr), cbuf, address_size)
+	  << ":" << ntohs(addr.sin_port);
 	serv_log(s.str());	
-	corr.serve(ns);
+	corr.serve(ns, addr);
       }
     }
   }
