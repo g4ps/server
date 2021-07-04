@@ -26,21 +26,23 @@
 #include "parse_help.hpp"
 #include "http_message.hpp"
 #include "http_request.hpp"
+#include "http_location.hpp"
 #include "http_utils.hpp"
 
 using namespace std;
 
+class http_cgi
+{
+  string extention;
+  string path;  
+};
 
 class http_server
 {
 private:
   string name;
   deque<int> sock_fds;
-  map<string, string> locations;
-  string redirect;
-  bool auto_index;
-  map<int, string> error_pages;
-  list<string> default_pages;
+  list<http_location> locations;
 private:
   //private methods
 public:
