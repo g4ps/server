@@ -10,12 +10,6 @@
 
 using namespace std;
 
-void serv_log(string s);
-string convert_to_string(int);
-string convert_to_string(size_t);
-string convert_to_string(short);
-string convert_to_string(off_t);
-
 class http_message
 {
 protected:
@@ -56,6 +50,7 @@ public:
   //maybe i should rename it
   pair<bool, string> get_header_value(string name);
   size_t get_body_size() const;
+  void print_body_into_fd(int fd);
 };
 
 #endif

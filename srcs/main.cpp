@@ -20,41 +20,10 @@
 #include "http_message.hpp"
 #include "http_server.hpp"
 #include "http_webserv.hpp"
+#include "http_utils.hpp"
 
 using namespace std;
 
-void serv_log(std::string out)
-{
-  std::cout<<out<<std::endl;
-}
-
-string convert_to_string(size_t arg)
-{
-  stringstream s;
-  s << arg;
-  return s.str();
-}
-
-string convert_to_string(off_t arg)
-{
-  stringstream s;
-  s << arg;
-  return s.str();
-}
-
-string convert_to_string(int arg)
-{
-  stringstream s;
-  s << arg;
-  return s.str();
-}
-
-string convert_to_string(short arg)
-{
-  stringstream s;
-  s << arg;
-  return s.str();
-}
 
 /*
   function: get_address_from_hostname returns sockaddr_in (ipv4) for 
@@ -67,37 +36,37 @@ string convert_to_string(short arg)
   of getting adderess from hostname, in this function i just
   add all the neccesary hints, bells and whistles in it;
  */
-struct sockaddr_in*
-get_address_from_hostname(const char *host, unsigned short port)
-{
-  struct addrinfo hints;
-  memset(&hints, 0, sizeof(addrinfo));
-  hints.ai_family = AF_INET;
-  struct addrinfo *res = NULL;
-  struct addrinfo *i = NULL;
-  struct addrinfo *tmp = NULL;
-  int err = getaddrinfo(host, NULL, &hints, &res);
-  if (err != 0) {
-    serv_log(gai_strerror(err));
-    return NULL;
-  }
-  struct sockaddr_in *p = NULL;
-  for (i = res; i != NULL; i++) {
-    if (i->ai_family == AF_INET) {
-      p = (sockaddr_in *)res->ai_addr;
-      break;
-    }
-  }
-  if (p == NULL) {
-    return NULL;
-  }
-  struct sockaddr_in* ret = new sockaddr_in;
-  memcpy(ret, p, sizeof(sockaddr_in));
-  ret->sin_port = htons(port);
-  freeaddrinfo(res);
-  return ret;
-  //С++ maybe exceptions
-}
+// struct sockaddr_in*
+// get_address_from_hostname(const char *host, unsigned short port)
+// {
+//   struct addrinfo hints;
+//   memset(&hints, 0, sizeof(addrinfo));
+//   hints.ai_family = AF_INET;
+//   struct addrinfo *res = NULL;
+//   struct addrinfo *i = NULL;
+//   struct addrinfo *tmp = NULL;
+//   int err = getaddrinfo(host, NULL, &hints, &res);
+//   if (err != 0) {
+//     serv_log(gai_strerror(err));
+//     return NULL;
+//   }
+//   struct sockaddr_in *p = NULL;
+//   for (i = res; i != NULL; i++) {
+//     if (i->ai_family == AF_INET) {
+//       p = (sockaddr_in *)res->ai_addr;
+//       break;
+//     }
+//   }
+//   if (p == NULL) {
+//     return NULL;
+//   }
+//   struct sockaddr_in* ret = new sockaddr_in;
+//   memcpy(ret, p, sizeof(sockaddr_in));
+//   ret->sin_port = htons(port);
+//   freeaddrinfo(res);
+//   return ret;
+//   //С++ maybe exceptions
+// }
 
 /*
   function: init_serv
@@ -108,34 +77,34 @@ get_address_from_hostname(const char *host, unsigned short port)
   and already listening
  */
 
-int init_serv(struct sockaddr_in *addr)
-{
-  int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sock_fd < 0) {
-    serv_log("ERROR: socket shat the bed");
-    serv_log(strerror(errno));
-    return -1;
-  }
-  int reuse = 1;
-  if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (void*)&reuse, sizeof(int)) == -1) {
-    serv_log("ERROR: setsockopt fucked up");
-    serv_log(strerror(errno));
-    return -1;
-  }
-  if (bind(sock_fd, (struct sockaddr*) addr, sizeof(struct sockaddr_in)) == -1) {
-    serv_log("ERROR: bind fucked up");
-    serv_log(strerror(errno));
-    return -1;
-  }
-  if (listen(sock_fd, 10) == -1) {
-    serv_log("ERROR: listen fucked up");
-    serv_log(strerror(errno));
-    return -1;
-  }
-  serv_log("Success");
-  return sock_fd;
-  //C++ exceptions
-}
+// int init_serv(struct sockaddr_in *addr)
+// {
+//   int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+//   if (sock_fd < 0) {
+//     serv_log("ERROR: socket shat the bed");
+//     serv_log(strerror(errno));
+//     return -1;
+//   }
+//   int reuse = 1;
+//   if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (void*)&reuse, sizeof(int)) == -1) {
+//     serv_log("ERROR: setsockopt fucked up");
+//     serv_log(strerror(errno));
+//     return -1;
+//   }
+//   if (bind(sock_fd, (struct sockaddr*) addr, sizeof(struct sockaddr_in)) == -1) {
+//     serv_log("ERROR: bind fucked up");
+//     serv_log(strerror(errno));
+//     return -1;
+//   }
+//   if (listen(sock_fd, 10) == -1) {
+//     serv_log("ERROR: listen fucked up");
+//     serv_log(strerror(errno));
+//     return -1;
+//   }
+//   serv_log("Success");
+//   return sock_fd;
+//   //C++ exceptions
+// }
 
 int
 main(int argc, char **argv)

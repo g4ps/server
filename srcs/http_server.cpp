@@ -1,4 +1,5 @@
 #include <string>
+#include <list>
 #include <fcntl.h>
 #include <iostream>
 #include <fstream>
@@ -26,8 +27,10 @@
 #include "http_responce.hpp"
 #include "http_request.hpp"
 #include "http_server.hpp"
+#include "http_utils.hpp"
 
 using namespace std;
+
 
 void http_server::add_socket(string saddr, short port)
 {
@@ -206,39 +209,55 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
     for (int i = 0; i < 100; i++) {
       vars[i] = NULL;
     }
-    string temp = "CONTENT_LENGTH=";
-    temp += convert_to_string(req.get_body_size());
-    vars[0] = "QUERY_STRING=";    
-    vars[1] = temp.c_str();
-    vars[2] = "SERVER_SOFTWARE=Eugene_server 0.1";
-    vars[3] = "SERVER_NAME=vc";
-    string temp1 = string("SERVER_PORT=") + convert_to_string(8001);
-    vars[4] = temp1.c_str();
-    string temp2 = string("REQUEST_METHOD=") + req.get_method();    
-    vars[5] = temp2.c_str();
-    vars[6] = "SERVER_PROTOCOL=HTTP/1.1";
-    string temp3 = string("PATH_INFO=") + req.get_request_target();
-    vars[7] = temp3.c_str();
+    list<string> args;
+    args.push_back(string("CONTENT_LENGTH=")
+		   + convert_to_string(req.get_body_size()));
+    args.push_back("QUERY_STRING=");
+    args.push_back("SERVER_SOFTWARE=Eugene_server 0.1");
+    args.push_back(string("REQUEST_METHOD=") + req.get_method());
+    args.push_back("SERVER_PROTOCOL=HTTP/1.1");
+    args.push_back(string("PATH_INFO=") + req.get_request_target());
+    char pbuf[100];
+    getcwd(pbuf, 100);
+    args.push_back(string("PATH_TRANSLATED=") + pbuf + "/html" + req.get_request_target());
     char cad[100];
     inet_ntop(AF_INET, &(addr.sin_addr.s_addr), cad, sizeof(sockaddr_in));
-    
-    // vars[8] = ;
-    // vars[9] = string("REMOTE_PORT=") + convert_to_string(ntohs(addr.sin_port));
-    for (int i = 0; i < 10; i++) {
-      fprintf(stderr, "%s\n", vars[i]);
+    args.push_back(string("REMOTE_PORT=") + convert_to_string(ntohs(addr.sin_port)));
+    args.push_back(string("REMOTE_ADDR=") + cad);
+    sockaddr_in serv_addr;
+    socklen_t ssize = sizeof(sockaddr_in);
+    getsockname(req.get_socket(), (sockaddr*)&serv_addr, &ssize);
+    char cbd[100];
+    inet_ntop(AF_INET, &(serv_addr.sin_addr.s_addr), cbd, sizeof(sockaddr_in));
+    args.push_back(string("SERVER_NAME=") + cbd);
+    args.push_back(string("SERVER_PORT=") + convert_to_string(htons(serv_addr.sin_port)));
+    args.push_back(string("SCRIPT_NAME=") + req.get_request_target());
+    //args.push_back("SCRIPT_NAME=html/test.php");
+    //args.push_back("SCRIPT_FILENAME=/home/eugene/school/server/html/test.php");
+    args.push_back("GATEWAY_INTERFACE=CGI/1.1");
+    if (req.get_header_value("Content-Type").first) {
+      args.push_back(string("CONTENT_TYPE=") +
+		     req.get_header_value("Content-Type").second);
+      fprintf(stderr, "GOT HERE FOAN ONDSAO NDOSA NOIDASNO DSAIO \n");
     }
-    exit(0);
+    const char **vv = make_argument_vector(args);
+    for (size_t i = 0; i < args.size(); i++) {
+      fprintf(stderr, "%s\n", vv[i]);
+    }
     const char *k[10];
     k[0] = "/usr/bin/php-cgi";
-    k[1] = NULL;
-    execve("/usr/bin/php-cgi", (char* const *)k,  (char* const *)vars);
+    k[1] = "-f";
+    k[2] = "/home/eugene/school/server/html/test.php";
+    k[3] = NULL;
+    execve("/usr/bin/php-cgi", (char* const *)k,  (char* const *)vv);
     exit(0);
   }
   else {
     close(fd1[0]);
     close(fd2[1]);
-    const char *str =  "<?php echo \"Hello\";\n?>";
-    write(fd1[1], str, strlen(str));
+    if (req.get_body_size() != 0) {
+      req.print_body_into_fd(fd1[1]);
+    }
     close(fd1[1]);
     char buf[512];
     int n = 0;

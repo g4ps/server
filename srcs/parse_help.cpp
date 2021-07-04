@@ -1,4 +1,5 @@
 #include "parse_help.hpp"
+#include "http_utils.hpp"
 #include <string>
 #include <cstring>
 #include <cstdlib>

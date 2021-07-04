@@ -14,6 +14,7 @@
 
 #include "http_message.hpp"
 #include "http_request.hpp"
+#include "http_utils.hpp"
 #include "parse_help.hpp"
 
 using namespace std;

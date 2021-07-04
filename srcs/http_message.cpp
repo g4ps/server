@@ -4,6 +4,7 @@
 #include <exception>
 
 #include "http_message.hpp"
+#include "http_utils.hpp"
 #include "parse_help.hpp"
 
 using namespace std;
@@ -209,4 +210,11 @@ pair<bool, string> http_message::get_header_value(string name)
 size_t http_message::get_body_size() const
 {
   return body.size();
+}
+
+void http_message::print_body_into_fd(int fd)
+{
+  char buf[4096];
+  copy(body.begin(), body.end(), buf);
+  write(fd, buf, body.size());
 }

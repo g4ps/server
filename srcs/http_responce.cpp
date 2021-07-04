@@ -15,6 +15,7 @@
 
 #include "http_message.hpp"
 #include "http_responce.hpp"
+#include "http_utils.hpp"
 
 
 http_responce::http_responce()

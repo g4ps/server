@@ -26,6 +26,7 @@
 #include "parse_help.hpp"
 #include "http_message.hpp"
 #include "http_request.hpp"
+#include "http_utils.hpp"
 
 using namespace std;
 
@@ -33,6 +34,7 @@ using namespace std;
 class http_server
 {
 private:
+  string name;
   deque<int> sock_fds;
   map<string, string> locations;
   string redirect;
