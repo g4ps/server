@@ -122,7 +122,19 @@ main(int argc, char **argv)
     http_server s1;
     s1.add_socket("127.0.0.1", 8001);
     http_server s2;
+    http_location l1;
+    l1.add_method("GET");
+    l1.add_method("POST");
+    l1.set_path("/");
+    l1.set_root("html/");
+    http_location l2;
+    l2.set_root("/Users/fthemis/nginx/html");
+    l2.set_path("/another/");
     s2.add_socket("0.0.0.0", 8002);
+    s2.add_location(l2);
+    s2.add_location(l1);
+    s1.add_location(l1);
+    s1.add_location(l2);
     w1.add_server(s1);
     w1.add_server(s2);
   }

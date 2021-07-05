@@ -67,9 +67,25 @@ void http_location::set_path(string s)
   path = s;
 }
 
+string http_location::get_path() const
+{
+  return path;
+}
+
 void http_location::set_root(string s)
 {
+  if (!is_directory(s)) {
+    serv_log(string("Couln't open directory ") + s);
+    throw invalid_state();
+  }
+  if (s[s.length() - 1] != '/')
+    s += "/";
   root = s;
+}
+
+string http_location::get_root() const
+{
+  return root;
 }
 
 void http_location::set_autoindex()
@@ -102,5 +118,15 @@ void http_location::add_default_page(string def)
   default_pages.push_back(def);
 }
 
-
-  
+string http_location::process_file_name(string s)
+{
+  string ret = root;
+  if (ret[ret.length() - 1] == '/')
+    ret.resize(ret.length() - 1); //removing trailing slash
+  //Removing path
+  size_t len = 0;
+  while (s[len] == path[len] && len < s.length())
+    len++;
+  s = s.substr(len);
+  return ret + s;
+}

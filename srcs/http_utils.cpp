@@ -6,6 +6,7 @@
 #include <map>
 #include <vector>
 #include <exception>
+#include <sys/stat.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -17,6 +18,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 
+#include "http_server.hpp"
 #include "http_utils.hpp"
 
 void serv_log(std::string out)
@@ -65,4 +67,17 @@ const char ** make_argument_vector(list<string> s)
     i++;
   }
   return ret;
+}
+
+bool is_directory(string target)
+{
+  struct stat temp;
+  if (stat(target.c_str(), &temp) < 0) {
+    serv_log(string("Cannot perform stat: ") + strerror(errno));
+    //throw http_server::invalid_target();    
+  }
+  if (temp.st_mode & S_IFDIR) {
+    return true;
+  }
+  return false;
 }

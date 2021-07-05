@@ -84,6 +84,7 @@ void http_responce::write_responce()
     add_header_field("Connection", "closed");
     //Just the static pages
     int fd = open(target_name.c_str(), O_RDONLY);
+    //Add check, that target_name doesn't point on a directory!!!!!!!!!!
     if (fd < 0) {
       if (errno == EACCES) {
 	serv_log(string("Access to target \'") + target_name + "\' was denied");

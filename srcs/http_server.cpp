@@ -169,10 +169,14 @@ void http_server::process_request(http_request& msg, sockaddr_in addr)
 
 void http_server::process_get_request(http_request& req)
 {
-  //replace this thing by normal search
-  string file_name = "html" + req.get_request_target();
-  if (file_name[file_name.length() - 1] == '/')
+  http_location &r = get_location_from_target(req.get_request_target());
+  serv_log(string("Path, that get_location_from_target returns: ") + r.get_root());  
+  string file_name = r.process_file_name(req.get_request_target());
+  if (file_name[file_name.length() - 1] == '/' || is_directory(file_name)) {
+    if (file_name[file_name.length() - 1] != '/')
+      file_name += "/";
     file_name += "index.html";
+  }
   try {
     http_responce resp(200);
     resp.set_target_name(file_name);
@@ -238,7 +242,6 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
     if (req.get_header_value("Content-Type").first) {
       args.push_back(string("CONTENT_TYPE=") +
 		     req.get_header_value("Content-Type").second);
-      fprintf(stderr, "GOT HERE FOAN ONDSAO NDOSA NOIDASNO DSAIO \n");
     }
     const char **vv = make_argument_vector(args);
     for (size_t i = 0; i < args.size(); i++) {
@@ -388,3 +391,41 @@ void http_server::process_post_request(http_request &req)
   //   process_cgi(req);
   // }
 }
+
+http_location& http_server::get_location_from_target(string s)
+{
+  size_t max = 0;
+  list<http_location>::iterator it;
+  list<http_location>::iterator ret = locations.end();
+  for (it = locations.begin(); it != locations.end(); it++) {
+    string curr = it->get_path();
+    if (curr[curr.length() - 1] == '/') //removing trailing slash
+      curr.resize(curr.length() - 1);
+    string temp = s;
+    temp.resize(curr.size());
+    if (temp == curr) {
+      size_t tm = temp.length();
+      if (tm > max) {
+	max = tm;
+	ret = it;
+      }
+    }
+  }
+  if (ret == locations.end()) {
+    serv_log(string("Cannot find appropriate path for target ") + s);
+    throw invalid_target();
+  }
+  return *ret;
+}
+
+void http_server::check_location_for_correctness(http_location in)
+{
+  //TODO
+}
+
+void http_server::add_location(http_location in)
+{
+  locations.push_back(in);
+}
+
+

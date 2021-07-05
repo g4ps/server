@@ -54,12 +54,15 @@ public:
   bool is_method_accepted(string s);
   void add_redirect(int status, string dir);
   void set_path(string s);
+  string get_path() const;
   void set_root(string s);
+  string get_root() const;
   void set_autoindex();
   void unset_autoindex();
   bool get_autoindex() const;
   void add_error_page(int status, string path);
   void add_default_page(string name);
+  string process_file_name(string s);
 };
 
 #endif
