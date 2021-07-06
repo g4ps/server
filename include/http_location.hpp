@@ -38,14 +38,23 @@ class http_location
   string root;
   bool auto_index;
   map<int, string> error_pages;
-  list<string> default_pages;
+  list<string> index;
   // list<http_cgi> cgi;
+private:
+  bool is_path(string s) const;
 public:
   class invalid_state: public exception
   {
     const char* what() const throw()
     {
       return "Invalid state";
+    }
+  };
+  class not_found: public exception
+  {
+    const char* what() const throw()
+    {
+      return "File was not found";
     }
   };
   http_location();
@@ -61,8 +70,11 @@ public:
   void unset_autoindex();
   bool get_autoindex() const;
   void add_error_page(int status, string path);
-  void add_default_page(string name);
-  string process_file_name(string s);
+  void add_index(string name);
+  string get_file_name(string s);
+  bool is_located(string target) const;
+  size_t get_path_depth() const;
+  string get_index_page(string s);
 };
 
 #endif

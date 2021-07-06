@@ -127,9 +127,11 @@ main(int argc, char **argv)
     l1.add_method("POST");
     l1.set_path("/");
     l1.set_root("html/");
+    l1.add_index("index.html");
     http_location l2;
-    l2.set_root("/Users/fthemis/nginx/html");
+    l2.set_root("html/new_site/");
     l2.set_path("/another/");
+    l2.add_index("index.html");
     s2.add_socket("0.0.0.0", 8002);
     s2.add_location(l2);
     s2.add_location(l1);

@@ -81,3 +81,12 @@ bool is_directory(string target)
   }
   return false;
 }
+
+bool does_exist(string target)
+{
+  struct stat temp;
+  if (stat(target.c_str(), &temp) < 0) {
+    return false;
+  }
+  return true;
+}

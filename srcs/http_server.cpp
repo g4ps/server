@@ -9,6 +9,7 @@
 #include <exception>
 #include <cstring>
 #include <sys/wait.h>
+#include <algorithm>
 
 #include <stdio.h>
 #include <string.h>
@@ -169,19 +170,18 @@ void http_server::process_request(http_request& msg, sockaddr_in addr)
 
 void http_server::process_get_request(http_request& req)
 {
-  http_location &r = get_location_from_target(req.get_request_target());
-  serv_log(string("Path, that get_location_from_target returns: ") + r.get_root());  
-  string file_name = r.process_file_name(req.get_request_target());
-  if (file_name[file_name.length() - 1] == '/' || is_directory(file_name)) {
-    if (file_name[file_name.length() - 1] != '/')
-      file_name += "/";
-    file_name += "index.html";
-  }
   try {
+    http_location &r = get_location_from_target(req.get_request_target());
+    string file_name = r.get_file_name(req.get_request_target());
+    serv_log(string("Path of location: '") + r.get_path() + "'");
+    serv_log(string("Requested file: '") + file_name + "'");
     http_responce resp(200);
     resp.set_target_name(file_name);
     resp.set_socket(req.get_socket());
     resp.write_responce();
+  }
+  catch(http_location::not_found &e) {
+    process_error(req, 404);
   }
   catch(http_responce::target_not_found &e) {
     process_error(req, 404);
@@ -398,13 +398,8 @@ http_location& http_server::get_location_from_target(string s)
   list<http_location>::iterator it;
   list<http_location>::iterator ret = locations.end();
   for (it = locations.begin(); it != locations.end(); it++) {
-    string curr = it->get_path();
-    if (curr[curr.length() - 1] == '/') //removing trailing slash
-      curr.resize(curr.length() - 1);
-    string temp = s;
-    temp.resize(curr.size());
-    if (temp == curr) {
-      size_t tm = temp.length();
+    if (it->is_located(s)) {
+      size_t tm = it->get_path_depth();
       if (tm > max) {
 	max = tm;
 	ret = it;

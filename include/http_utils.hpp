@@ -15,5 +15,6 @@ string convert_to_string(short);
 string convert_to_string(off_t);
 const char ** make_argument_vector(list<string> s);
 bool is_directory(string target);
+bool does_exist(string s);
 
 #endif

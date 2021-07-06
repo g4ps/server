@@ -7,6 +7,7 @@
 #include <exception>
 #include <list>
 #include <deque>
+#include <algorithm>
 
 #include <stdio.h>
 #include <string.h>
@@ -27,6 +28,14 @@
 #include "http_location.hpp"
 
 using namespace std;
+
+bool http_location::is_path(string s) const
+{
+  if (s == path)
+    return true;
+  s += "/";
+  return s == path;
+}
 
 http_location::http_location()
 {
@@ -64,6 +73,12 @@ void http_location::add_redirect(int status, string dir)
 
 void http_location::set_path(string s)
 {
+  //Adding trailing slash
+  //Needed  for consistency (i.e. every functions,
+  //that interacts with path assumes that it has a
+  //slash at the end
+  if (s[s.length() - 1] != '/')
+    s += "/";
   path = s;
 }
 
@@ -113,20 +128,60 @@ void http_location::add_error_page(int status, string path)
   }
 }
 
-void http_location::add_default_page(string def)
+void http_location::add_index(string def)
 {
-  default_pages.push_back(def);
+  index.push_back(def);
 }
 
-string http_location::process_file_name(string s)
+string http_location::get_index_page(string path)
 {
-  string ret = root;
-  if (ret[ret.length() - 1] == '/')
-    ret.resize(ret.length() - 1); //removing trailing slash
-  //Removing path
-  size_t len = 0;
-  while (s[len] == path[len] && len < s.length())
-    len++;
-  s = s.substr(len);
-  return ret + s;
+  if (path[path.length() - 1] != '/')
+    path += "/";
+  list<string>::const_iterator it;
+  for (it = index.begin(); it != index.end(); it++) {
+    string temp = path + *it;
+    if (does_exist(temp))
+      return temp;
+  }
+  serv_log(string("Couldn't find index in path '") + path + "'");
+  throw not_found();
+}
+
+string http_location::get_file_name(string s)
+{
+  if (is_path(s))
+    return get_index_page(root);
+  s.erase(s.begin(), s.begin() + path.length());  
+  s = root + s;
+  if (is_directory(s))
+    return get_index_page(s);
+  if (!does_exist(s)) {
+    serv_log(string("File '") + s + "' doesn't exist");
+    throw not_found();
+  }
+  return s;
+  // string ret = root;
+  // if (ret[ret.length() - 1] == '/')
+  //   ret.resize(ret.length() - 1); //removing trailing slash
+  // //Removing path
+  // size_t len = 0;
+  // while (s[len] == path[len] && len < s.length())
+  //   len++;
+  // s = s.substr(len);
+  // return ret + s;
+}
+
+bool http_location::is_located(string target) const
+{
+  if (is_path(target))
+    return true;
+  target.resize(path.size());
+  if (target == path)
+    return true;
+  return false;
+}
+
+size_t http_location::get_path_depth() const
+{
+  return count(path.begin(), path.end(), '/');
 }
