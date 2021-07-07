@@ -37,8 +37,11 @@ class http_location
   string path;
   string root;
   bool auto_index;
+  bool upload_accept;
+  string upload_folder;
   map<int, string> error_pages;
   list<string> index;
+  
   // list<http_cgi> cgi;
 private:
   bool is_path(string s) const;

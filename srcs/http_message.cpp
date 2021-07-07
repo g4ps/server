@@ -218,3 +218,8 @@ void http_message::print_body_into_fd(int fd)
   copy(body.begin(), body.end(), buf);
   write(fd, buf, body.size());
 }
+
+void http_message::set_server(http_server *l)
+{
+  serv = l;
+}

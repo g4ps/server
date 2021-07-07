@@ -10,9 +10,12 @@
 
 using namespace std;
 
+class http_server;
+
 class http_message
 {
 protected:
+  http_server *serv;
   vector<char> raw;
   string start_line;
   multimap<string, string> header_lines;
@@ -51,6 +54,7 @@ public:
   pair<bool, string> get_header_value(string name);
   size_t get_body_size() const;
   void print_body_into_fd(int fd);
+  void set_server(http_server *s);
 };
 
 #endif

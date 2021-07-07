@@ -258,7 +258,8 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
     }
     const char *k[10];
     k[0] = "/usr/bin/php-cgi";
-    k[1] = "-f";
+    k[1] = NULL;
+    // k[1] = "-f";
     k[2] = "/home/eugene/school/server/html/test.php";
     k[3] = NULL;
     execve("/usr/bin/php-cgi", (char* const *)k,  (char* const *)vv);
