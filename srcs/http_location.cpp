@@ -135,8 +135,8 @@ void http_location::add_index(string def)
 
 string http_location::get_index_page(string path)
 {
-  if (path[path.length() - 1] != '/')
-    path += "/";
+  if (path[path.length() - 1] != '/' && is_directory(path))
+    throw directory_uri();
   list<string>::const_iterator it;
   for (it = index.begin(); it != index.end(); it++) {
     string temp = path + *it;
@@ -149,8 +149,11 @@ string http_location::get_index_page(string path)
 
 string http_location::get_file_name(string s)
 {
-  if (is_path(s))
+  if (is_path(s)) {
+    if (s[s.length() - 1] != '/')
+      throw directory_uri();    
     return get_index_page(root);
+  }
   s.erase(s.begin(), s.begin() + path.length());  
   s = root + s;
   if (is_directory(s))

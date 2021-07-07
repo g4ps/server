@@ -180,6 +180,15 @@ void http_server::process_get_request(http_request& req)
     resp.set_socket(req.get_socket());
     resp.write_responce();
   }
+  catch(http_location::directory_uri &e) {
+    string t = req.get_header_value("host").second;
+    if (t[t.length() - 1] == '/')
+      t = t.substr(0, t.length() - 1);
+    t += req.get_request_target();
+    t += "/";
+    t = string("http://") + t;
+    process_redirect(req, 301, t);
+  }
   catch(http_location::not_found &e) {
     process_error(req, 404);
   }
@@ -272,6 +281,20 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
   }
 }
 
+void http_server::process_redirect(http_request &in, int status, string target)
+{
+  serv_log(string("Processing redirect from '") + in.get_request_target()
+	   + "' to '" + target + "'");
+  try {
+    http_responce resp(status);
+    resp.set_socket(in.get_socket());
+    resp.add_header_field("Location", target);
+    resp.write_responce();
+  }
+  catch (exception &e) {
+    serv_log(string("Something went wrong: ") + e.what());    
+  }
+}
 
 void http_server::process_error(http_request &in, int status)
 {

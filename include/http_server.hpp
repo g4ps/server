@@ -94,6 +94,7 @@ public:
   void process_cgi(http_request &req, sockaddr_in addr);
   http_location& get_location_from_target(string s);
   void add_location(http_location in);
+  void process_redirect(http_request &in, int status, string target);
 };
 
 string test_page();

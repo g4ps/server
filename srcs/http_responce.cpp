@@ -31,6 +31,9 @@ http_responce::http_responce(int st)
   case 200:
     reason_phrase = "OK";
     break;
+  case 301:
+    reason_phrase = "Moved Permanently";
+    break;
   case 404:
     reason_phrase = "Not Found";
     break;

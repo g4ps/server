@@ -57,6 +57,13 @@ public:
       return "File was not found";
     }
   };
+  class directory_uri: public exception
+  {
+    const char* what() const throw()
+    {
+      return "File was not found";
+    }
+  };
   http_location();
   http_location(string s);
   void add_method(string s);
