@@ -156,17 +156,22 @@ void http_server::serve(int fd, sockaddr_in addr)
 
 void http_server::process_request(http_request& msg, sockaddr_in addr)
 {
-  if (is_cgi_request(msg.get_request_target())) {
-    process_cgi(msg, addr);
-    return ;
-  }  
+  try {
+    if (is_cgi_request(msg.get_request_target())) {
+      process_cgi(msg, addr);
+      return ;
+    }
+  }
+  catch (exception &e) {
+    
+  }
   string type = msg.get_method();
   http_location &r = get_location_from_target(msg.get_request_target());
   if (!r.is_method_accepted(msg.get_method())) {
     throw method_not_allowed();
   }
   if (type == "GET") {
-    process_get_request(msg);  
+    process_get_request(msg, addr);
   }
   else if (type == "POST") {
     process_post_request(msg);
@@ -176,7 +181,7 @@ void http_server::process_request(http_request& msg, sockaddr_in addr)
   }
 }
 
-void http_server::process_get_request(http_request& req)
+void http_server::process_get_request(http_request& req, sockaddr_in addr)
 {
   try {
     http_location &r = get_location_from_target(req.get_request_target());
@@ -214,6 +219,7 @@ void http_server::process_get_request(http_request& req)
 const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
 {
   http_location &r = get_location_from_target(req.get_request_target());
+  string script_name = r.get_uri_full_path(req.get_request_target());
   list<string> args;
   if (req.get_body_size() != 0) {
     args.push_back(string("CONTENT_LENGTH=")
@@ -243,7 +249,7 @@ const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
   inet_ntop(AF_INET, &(serv_addr.sin_addr.s_addr), cbd, sizeof(sockaddr_in));
   args.push_back(string("SERVER_NAME=") + cbd);
   args.push_back(string("SERVER_PORT=") + convert_to_string(htons(serv_addr.sin_port)));
-  args.push_back(string("SCRIPT_NAME=") + req.get_request_target());
+  args.push_back(string("SCRIPT_NAME=") + script_name);
   // args.push_back(string("SCRIPT_NAME=/"));//+ req.get_request_target());
   args.push_back("GATEWAY_INTERFACE=CGI/1.1");
   if (req.get_header_value("Content-Type").first) {
@@ -274,7 +280,6 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
     try {
       http_location &r = get_location_from_target(req.get_request_target());
       const char **vv = compose_cgi_envp(req, addr);
-      chdir(r.get_root().c_str());
       //make it a fucking path
       const char *k[10];
       k[0] = strdup(r.cgi_path(req.get_request_target()).c_str());
@@ -294,6 +299,10 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       const char *fn = strdup(r.cgi_path(req.get_request_target()).c_str());
       dup2(fd1[0], 0);
       dup2(fd2[1], 1);
+      if (chdir(r.get_root().c_str()) < 0) {
+	cerr << "Cannot change directory to " << r.get_root() <<
+	  "'" << strerror(errno) << "'" << endl;
+      }
       cerr << "PHP: EXECUTING\n";
       if (execve(fn, (char* const *)k,  (char* const*)vv) < 0) {
 	cerr << "PHP: EXECVE_FAIL\n";
@@ -302,7 +311,7 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       }
     }
     catch(exception &e) {
-      cerr << string("Something went wrong during execution of cgi script: ") + e.what();
+      cerr << string("Something went wrong during execution of cgi script: ") + e.what() << endl;
       exit(1);
     }
     exit(0);

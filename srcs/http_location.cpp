@@ -133,7 +133,7 @@ void http_location::add_index(string def)
   index.push_back(def);
 }
 
-string http_location::get_index_page(string path)
+string http_location::get_index_page(string path) const
 {
   if (path[path.length() - 1] != '/' && is_directory(path))
     throw directory_uri();
@@ -147,7 +147,7 @@ string http_location::get_index_page(string path)
   throw not_found();
 }
 
-string http_location::get_file_name(string s)
+string http_location::get_file_name(string s) const
 {
   if (is_path(s)) {
     if (s[s.length() - 1] != '/')
@@ -200,8 +200,9 @@ string http_location::compose_allowed_methods() const
   return ret;
 }
 
-bool http_location::is_cgi_request(string target) const
+bool http_location::is_cgi_request(string t) const
 {
+  string target = get_file_name(t);
   list<http_cgi>::const_iterator it;
   for (it = cgi.begin(); it != cgi.end(); it++) {
     string curr = it->extention;
@@ -215,8 +216,9 @@ bool http_location::is_cgi_request(string target) const
   return false;
 }
 
-string http_location::cgi_path(string target) const
+string http_location::cgi_path(string t) const
 {
+  string target = get_file_name(t);
   list<http_cgi>::const_iterator it;
   for (it = cgi.begin(); it != cgi.end(); it++) {
     string curr = it->extention;
@@ -228,4 +230,11 @@ string http_location::cgi_path(string target) const
     }
   }
   return "";
+}
+
+string http_location::get_uri_full_path(string t) const
+{
+  string target = get_file_name(t);
+  target = target.substr(root.length() - 1);
+  return target;
 }

@@ -86,14 +86,15 @@ public:
   bool get_autoindex() const;
   void add_error_page(int status, string path);
   void add_index(string name);
-  string get_file_name(string s);
+  string get_file_name(string s) const;
   bool is_located(string target) const;
   size_t get_path_depth() const;
-  string get_index_page(string s);
+  string get_index_page(string s) const;
   void add_cgi(string ext, string filename);
   string compose_allowed_methods() const;
   bool is_cgi_request(string target) const;
   string cgi_path(string target) const;
+  string get_uri_full_path(string target) const;
 };
 
 #endif

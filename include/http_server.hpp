@@ -78,7 +78,7 @@ public:
   size_t num_of_sockets() const;
   void add_socket_from_hostname(string host, short port);
   void process_request(http_request& msg, sockaddr_in addr);
-  void process_get_request(http_request &msg);
+  void process_get_request(http_request &msg, sockaddr_in addr);
   void process_post_request(http_request &msg);
   void process_not_found(http_request &req);
   void send_status_code(http_request&, int code);
