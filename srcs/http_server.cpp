@@ -265,9 +265,18 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
   serv_log("Processing cgi");
   int fd1[2];
   int fd2[2];
-  pipe(fd1);
-  pipe(fd2);
+  int r1, r2;
+  r1 = pipe(fd1);
+  r2 = pipe(fd2);
+  if (r1 < 0 && r2 < 0) {
+    serv_log(string ("Pipe ERROR ") + strerror(errno));
+    throw internal_error();
+  }
   pid_t pid = fork();
+  if (pid < 0) {
+    serv_log(string("Fork error ") + strerror(errno));
+    throw internal_error();
+  }
   if (pid == 0) {
     close(fd1[1]);
     close(fd2[0]);
@@ -314,26 +323,24 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
   else {
     close(fd1[0]);
     close(fd2[1]);
-    if (req.get_body_size() != 0) {
-      req.print_body_into_fd(fd1[1]);
-    }
     try {
+      if (req.get_body_size() != 0) {
+	req.print_body_into_fd(fd1[1]);
+      }
+      close(fd1[1]);
       http_responce resp;
       resp.set_socket(req.get_socket());
       resp.set_cgi_fd(fd2[0]);
       resp.handle_cgi();
     }
     catch(exception &e) {
+      close(fd1[1]);
+      close(fd2[0]);
       serv_log("Something bad happened while executing CGI\n");
+      return ;
     }
-    // close(fd1[1]);
-    // char buf[512];
-    // int n = 0;
-    // while ((n = read(fd2[0], buf, 512)) != 0) {
-    //   write(1, buf, n);
-    // }
-    int status;
     close(fd2[0]);
+    int status;
     wait(&status);
     if (WIFEXITED(status)) {
       serv_log("CGI process exited normally");

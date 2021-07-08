@@ -126,7 +126,8 @@ main(int argc, char **argv)
     l1.add_method("GET");
     l1.add_method("POST");
     l1.set_path("/");
-    l1.set_root("html/");
+    //    l1.set_root("/home/eugene/my_quiz");
+    l1.set_root("/home/eugene/my_quiz/");
     l1.add_index("index.html");
     l1.add_index("index.php");
     l1.add_cgi(".php", "/usr/bin/php-cgi");

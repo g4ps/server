@@ -1,16 +1,13 @@
 <?php
 
-var_dump($_SERVER['argv']);
-echo "<table border=1>";
-foreach($_SERVER as $n => $s)
-{
-	echo "<tr>";
-	echo "<td>". $n . "</td>";
-	echo "<td>". $s . "</td>";
-	echo "</tr>";
-}
+$link = mysqli_connect("localhost", "root", "root", "quiz");
 
+if (!$link)
+	echo "Error occured";
+
+$q = "SELECT * FROM quiz_list";
+$r = mysqli_query($link, $q);
+var_dump($r);
 
 ?>
 
-<a href="../">Go back</a>

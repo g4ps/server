@@ -229,8 +229,8 @@ void http_responce::print() const
     cout << i->first <<": " << i->second<< "\r\n";
   }
   string msg_body(body.begin(), body.end());
-  if (msg_body.length() != 0) 
-    cout<<msg_body<<std::endl;
+  // if (msg_body.length() != 0) 
+  //   cout<<msg_body<<std::endl;
 }
 
 
@@ -249,7 +249,7 @@ void http_responce::handle_cgi()
     ;
   string inp;
   inp.insert(inp.end(), raw.begin(), raw.end());
-  cout << "Cgi return: " << inp << endl;
+  // cout << "Cgi return: " << inp << endl;
   parse_header_fields(inp);
   if (get_header_value("status").first) {
     string t = get_header_value("status").second;
