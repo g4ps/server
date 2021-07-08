@@ -159,7 +159,6 @@ string http_location::get_file_name(string s) const
   if (is_directory(s))
     return get_index_page(s);
   if (!does_exist(s)) {
-    serv_log(string("File '") + s + "' doesn't exist");
     throw not_found();
   }
   return s;
@@ -202,7 +201,13 @@ string http_location::compose_allowed_methods() const
 
 bool http_location::is_cgi_request(string t) const
 {
-  string target = get_file_name(t);
+  string target;
+  try {
+    target = get_file_name(t);
+  }
+  catch(exception &e) {
+    return false;
+  }
   list<http_cgi>::const_iterator it;
   for (it = cgi.begin(); it != cgi.end(); it++) {
     string curr = it->extention;

@@ -62,40 +62,17 @@ void http_request::print() const
 
 string http_request::get_method() const 
 {
-  size_t pos;
-  pos = start_line.find(' ');
-  if (pos == string::npos) {
-    serv_log("Invalid call to get_method on non-request");
-    throw invalid_state();
-  }
-  return start_line.substr(0, pos);
+  return method;
 }
 
 string http_request::get_request_target() const
 {
-  size_t pos;
-  size_t tpos;
-  pos = start_line.find(' ');
-  tpos = start_line.find(' ', pos + 1);
-  if (pos == string::npos || tpos == string::npos) {
-    serv_log("Invalid call to get_request_target on non-request");
-    throw invalid_state();
-  }
-  return start_line.substr(pos + 1, tpos - pos - 1);
+  return request_target;
 }
 
 string http_request::get_http_version() const
 {
-  size_t pos;
-  size_t tpos;
-  pos = start_line.find(' ');
-  pos = start_line.find(' ', pos + 1);
-  tpos = start_line.find("\r\n", pos + 1);
-  if (pos == string::npos || tpos == string::npos) {
-    serv_log("Invalid call to get_request_target on non-request");
-    throw invalid_state();
-  }
-  return start_line.substr(pos + 1, tpos - pos - 1);
+  return http_version;
 }
 
 void http_request::parse_start_line(string &inp)
@@ -119,6 +96,23 @@ void http_request::parse_start_line(string &inp)
   tpos += crlf.length();
   start_line = inp.substr(pos, tpos);
   inp.erase(pos, tpos - pos);
+
+  //Setting all the neccesary inside variables
+  pos = start_line.find(' ');  
+  tpos = start_line.find(' ', pos + 1);
+  if (pos == string::npos || tpos == string::npos) {
+    serv_log("Cannot set request_target");
+    throw invalid_head();
+  }
+  method = start_line.substr(0, pos);
+  request_target = start_line.substr(pos + 1, tpos - pos - 1);
+  pos = tpos;
+  tpos = start_line.find("\r\n", pos + 1);
+  if (pos == string::npos || tpos == string::npos) {
+    serv_log("Invalid call to get_request_target on non-request");
+    throw invalid_state();
+  }
+  http_version = start_line.substr(pos + 1, tpos - pos - 1);
 }
 
 void http_request::parse_head()
@@ -129,9 +123,6 @@ void http_request::parse_head()
   size_t tpos = inp.find(crlf);
   parse_start_line(inp);
   parse_header_fields(inp);
-  method = get_method();
-  request_target = get_request_target();
-  http_version = get_http_version();
   serv_log("Header parsing was successfull");
 }
 

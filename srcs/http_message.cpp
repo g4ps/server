@@ -273,6 +273,7 @@ void http_message::parse_header_fields(string &inp)
 
 ssize_t http_message::read_block(size_t size, int fd)
 {
+  int ret;
   if (fd < 0)
     fd = sock_fd;
   char buf[size];
@@ -282,8 +283,11 @@ ssize_t http_message::read_block(size_t size, int fd)
   fdarr.fd = fd;
   fdarr.events = 0;
   fdarr.events |= POLLIN;
-  if (poll(&fdarr, 1, 5000) <= 0) {
+  if ((ret = poll(&fdarr, 1, 5000)) <= 0) {
     close(fd);
+    if (ret == 0) {
+      throw req_timeout();
+    }
     throw invalid_state();
   }
   if (fdarr.revents & POLLERR) {

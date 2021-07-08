@@ -43,6 +43,13 @@ public:
       return "Invalid HTTP message";
     }
   };
+  class req_timeout: public exception {
+  public:    
+    const char* what() const throw()
+    {
+      return "Request holded for too long";
+    }
+  };
   virtual void print() const;
   ///////////////////////////////////////////////////
   // Supposed to be in different class  

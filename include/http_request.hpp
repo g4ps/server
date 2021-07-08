@@ -37,6 +37,12 @@ public:
       return "Something went terribly wrong";
     }
   };
+  class timeout_error: public exception {
+    const char* what() const throw()
+    {
+      return "Something went terribly wrong";
+    }
+  };
   class invalid_function_call: public exception {
     const char* what() const throw()
     {

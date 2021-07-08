@@ -55,6 +55,9 @@ void http_responce::set_status(int st)
   case 405:
     reason_phrase = "Method Not Allowed";
     break;
+  case 500:
+    reason_phrase = "Internal Server Error";
+    break;
   case 501:
     reason_phrase = "Not Implemented";
     break;

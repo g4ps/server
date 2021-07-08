@@ -47,7 +47,7 @@ public:
       return "Initialization error";
     }
   };
-  class process_error: public exception {
+  class internal_error: public exception {
     const char* what() const throw()
     {
       return "Something went terribly wrong";
@@ -80,9 +80,11 @@ public:
   void process_request(http_request& msg, sockaddr_in addr);
   void process_get_request(http_request &msg, sockaddr_in addr);
   void process_post_request(http_request &msg);
-  void process_not_found(http_request &req);
-  void send_status_code(http_request&, int code);
-  void send_timeout(int fd);
+
+  //Should be removed
+  // void process_not_found(http_request &req);
+  // void send_status_code(http_request&, int code);
+  // void send_timeout(int fd);
   bool has_socket(int fd);
   deque<int>& get_sockets();
   string get_header_string(int fd);

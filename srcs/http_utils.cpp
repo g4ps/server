@@ -72,7 +72,8 @@ bool is_directory(string target)
 {
   struct stat temp;
   if (stat(target.c_str(), &temp) < 0) {
-    serv_log(string("Cannot perform stat: ") + strerror(errno));
+    return false;
+    // serv_log(string("Cannot perform stat: ") + strerror(errno));
     //throw http_server::invalid_target();    
   }
   if (temp.st_mode & S_IFDIR) {

@@ -138,15 +138,20 @@ void http_server::serve(int fd, sockaddr_in addr)
   //get time;
   try {
     http_request req(fd);
-    req.print();
     process_request(req, addr);
   }
   catch (method_not_allowed &e) {
+    serv_log("ERROR: Method is not allowed");
     process_error(fd, 405);
   }
-  catch (exception &e) {
+  catch (http_request::invalid_head &e) {
+    serv_log("ERROR: Invalid header form");
     process_error(fd, 400);
-    cout<<"ERROR: "<<e.what()<<endl;
+    // cout<<"ERROR: "<<e.what()<<endl;
+  }
+  catch (exception &e) {
+    serv_log(string("ERROR: Internal server error: ") + e.what());
+    process_error(fd, 500);
   }
   close(fd);
   stringstream s;
@@ -156,21 +161,16 @@ void http_server::serve(int fd, sockaddr_in addr)
 
 void http_server::process_request(http_request& msg, sockaddr_in addr)
 {
-  try {
-    if (is_cgi_request(msg.get_request_target())) {
-      process_cgi(msg, addr);
-      return ;
-    }
-  }
-  catch (exception &e) {
-    
-  }
   string type = msg.get_method();
   http_location &r = get_location_from_target(msg.get_request_target());
   if (!r.is_method_accepted(msg.get_method())) {
     throw method_not_allowed();
   }
-  if (type == "GET") {
+  if (r.is_cgi_request(msg.get_request_target())) {
+    process_cgi(msg, addr);
+    return ;
+  }
+  else if (type == "GET") {
     process_get_request(msg, addr);
   }
   else if (type == "POST") {
@@ -260,12 +260,6 @@ const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
   return vv;
 }
 
-// const char **
-// compose_cgi_argv(http_request &req)
-// {
-  
-// }
-
 void http_server::process_cgi(http_request& req, sockaddr_in addr)
 {
   serv_log("Processing cgi");
@@ -288,25 +282,26 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       // k[2] = "/home/eugene/school/server/html/test.php";
       // k[3] = NULL;
       const char** arg;
-      cerr << "Argv:\n";
-      for (arg = k; *arg != NULL; arg++) {
-	cerr << *arg << endl;
-      }
-      cerr << "Envp:\n";
-      for (arg = vv; *arg != NULL; arg++) {
-	cerr << *arg << endl;
-      }
+      // cerr << "Argv:\n";
+      // for (arg = k; *arg != NULL; arg++) {
+      // 	cerr << *arg << endl;
+      // }
+      // cerr << "Envp:\n";
+      // for (arg = vv; *arg != NULL; arg++) {
+      // 	cerr << *arg << endl;
+      // }
       const char *fn = strdup(r.cgi_path(req.get_request_target()).c_str());
       dup2(fd1[0], 0);
       dup2(fd2[1], 1);
       if (chdir(r.get_root().c_str()) < 0) {
 	cerr << "Cannot change directory to " << r.get_root() <<
 	  "'" << strerror(errno) << "'" << endl;
+	exit(1);
       }
       cerr << "PHP: EXECUTING\n";
       if (execve(fn, (char* const *)k,  (char* const*)vv) < 0) {
 	cerr << "PHP: EXECVE_FAIL\n";
-	cerr << "Something went wrong during execve: " << strerror(errno) << endl;
+	cerr << "Error happened during execve: " << strerror(errno) << endl;
 	exit(1);
       }
     }
@@ -347,9 +342,11 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       serv_log("CGI process exited abnormaly");
       if (WIFSIGNALED(status)) {
 	int sign = WTERMSIG(status);
-	serv_log(string("Cause of exit: SIGNAL ") + convert_to_string(sign)
+	serv_log(string("Cause of exit: SIGNAL ")
+		 + convert_to_string(sign)
 		 + " (" + strsignal(sign) + ")");
       }
+      throw internal_error();
     }
   }
 }
@@ -444,22 +441,24 @@ string http_server::get_error_target_name(string target)
   return "";
 }
 
-void http_server::process_not_found(http_request &req)
-{
-  http_responce resp(404);
-  resp.set_socket(req.get_socket());
-  resp.write_responce();
-}
+//Should be removed
 
-void http_server::send_status_code(http_request &req, int code)
-{
-  if (code == 404)
-    process_not_found(req);
-}
+// void http_server::process_not_found(http_request &req)
+// {
+//   http_responce resp(404);
+//   resp.set_socket(req.get_socket());
+//   resp.write_responce();
+// }
 
-void http_server::send_timeout(int fd)
-{
-}
+// void http_server::send_status_code(http_request &req, int code)
+// {
+//   if (code == 404)
+//     process_not_found(req);
+// }
+
+// void http_server::send_timeout(int fd)
+// {
+// }
 
 bool http_server::has_socket(int fd)
 {
@@ -493,9 +492,14 @@ void http_server::process_post_request(http_request &req)
 
 http_location& http_server::get_location_from_target(string s)
 {
+  static string inp;
+  static list<http_location>::iterator ret;
+  if (inp == s)
+    return *ret;
+  inp = s;
   size_t max = 0;
   list<http_location>::iterator it;
-  list<http_location>::iterator ret = locations.end();
+  ret = locations.end();
   for (it = locations.begin(); it != locations.end(); it++) {
     if (it->is_located(s)) {
       size_t tm = it->get_path_depth();
