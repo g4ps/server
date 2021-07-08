@@ -132,7 +132,7 @@ main(int argc, char **argv)
     l1.add_index("index.php");
     l1.add_cgi(".php", "/usr/bin/php-cgi");
     http_location l2;
-    l2.set_root("html/new_site/");
+    l2.set_root("html/");
     l2.set_path("/another/");
     l2.add_index("index.html");
     l2.add_method("GET");

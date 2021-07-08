@@ -14,6 +14,7 @@
 #include <poll.h>
 #include <cerrno>
 
+#include "http_server.hpp"
 #include "http_message.hpp"
 #include "http_responce.hpp"
 #include "http_utils.hpp"
@@ -79,6 +80,8 @@ void http_responce::write_responce()
   if (target_name.size() == 0) {
     //Some static stuff, that we had put into the body
     //Is used by default error pages and such
+    int ret;
+    pollfd pfd;
     add_header_field("Connection", "closed");
     if (body.size() != 0)
       add_header_field("Content-length", convert_to_string(body.size()));
@@ -90,6 +93,20 @@ void http_responce::write_responce()
     write_head();
     char *buf = new char[BUFSIZ];
     while (body.size() != 0) {
+      pfd.fd = sock_fd;
+      pfd.events = 0 | POLLOUT;
+      if ((ret = poll(&pfd, 1, 5000)) == 0) {
+	serv_log("ERROR: Timeout during writing responce");
+	throw http_request::timeout_error();
+      }
+      else if (ret < 0) {
+	serv_log(string ("Poll ERROR: ") + strerror(errno));
+	throw http_server::internal_error();
+      }
+      if (pfd.revents & POLLERR) {
+	serv_log(string ("Poll ERROR: ") + strerror(errno));
+	throw http_server::internal_error();
+      }
       size_t n;
       n = BUFSIZ;
       if (body.size() < BUFSIZ)

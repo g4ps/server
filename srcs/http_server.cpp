@@ -337,7 +337,6 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       close(fd1[1]);
       close(fd2[0]);
       serv_log("Something bad happened while executing CGI\n");
-      return ;
     }
     close(fd2[0]);
     int status;
