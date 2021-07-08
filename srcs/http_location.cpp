@@ -163,15 +163,6 @@ string http_location::get_file_name(string s)
     throw not_found();
   }
   return s;
-  // string ret = root;
-  // if (ret[ret.length() - 1] == '/')
-  //   ret.resize(ret.length() - 1); //removing trailing slash
-  // //Removing path
-  // size_t len = 0;
-  // while (s[len] == path[len] && len < s.length())
-  //   len++;
-  // s = s.substr(len);
-  // return ret + s;
 }
 
 bool http_location::is_located(string target) const
@@ -187,4 +178,54 @@ bool http_location::is_located(string target) const
 size_t http_location::get_path_depth() const
 {
   return count(path.begin(), path.end(), '/');
+}
+
+void http_location::add_cgi(string ext, string filename)
+{
+  http_cgi n;
+  n.extention = ext;
+  n.path = filename;
+  cgi.push_back(n);
+}
+
+string http_location::compose_allowed_methods() const
+{
+  string ret;
+  list<string>::const_iterator it;
+  for (it = methods.begin(); it != methods.end(); it++) {
+    if (ret.length() != 0)
+      ret += " ";
+    ret += *it;
+  }
+  return ret;
+}
+
+bool http_location::is_cgi_request(string target) const
+{
+  list<http_cgi>::const_iterator it;
+  for (it = cgi.begin(); it != cgi.end(); it++) {
+    string curr = it->extention;
+    string temp = target;
+    if (curr.length() < temp.length()) {
+      temp = temp.substr(target.length() - curr.length(), curr.length());
+      if (temp == curr)
+	return true;
+    }
+  }
+  return false;
+}
+
+string http_location::cgi_path(string target) const
+{
+  list<http_cgi>::const_iterator it;
+  for (it = cgi.begin(); it != cgi.end(); it++) {
+    string curr = it->extention;
+    string temp = target;
+    if (curr.length() < temp.length()) {
+      temp = temp.substr(target.length() - curr.length(), curr.length());
+      if (temp == curr)
+	return it->path;
+    }
+  }
+  return "";
 }

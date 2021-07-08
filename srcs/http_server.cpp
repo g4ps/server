@@ -141,6 +141,9 @@ void http_server::serve(int fd, sockaddr_in addr)
     req.print();
     process_request(req, addr);
   }
+  catch (method_not_allowed &e) {
+    process_error(fd, 405);
+  }
   catch (exception &e) {
     process_error(fd, 400);
     cout<<"ERROR: "<<e.what()<<endl;
@@ -155,8 +158,13 @@ void http_server::process_request(http_request& msg, sockaddr_in addr)
 {
   if (is_cgi_request(msg.get_request_target())) {
     process_cgi(msg, addr);
-  }
+    return ;
+  }  
   string type = msg.get_method();
+  http_location &r = get_location_from_target(msg.get_request_target());
+  if (!r.is_method_accepted(msg.get_method())) {
+    throw method_not_allowed();
+  }
   if (type == "GET") {
     process_get_request(msg);  
   }
@@ -203,6 +211,49 @@ void http_server::process_get_request(http_request& req)
   }
 }
 
+const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
+{
+  http_location &r = get_location_from_target(req.get_request_target());
+  list<string> args;
+  if (req.get_body_size() != 0) {
+    args.push_back(string("CONTENT_LENGTH=")
+		   + convert_to_string(req.get_body_size()));
+  }
+  args.push_back("QUERY_STRING=");
+  args.push_back("SERVER_SOFTWARE=Eugene_server 0.1");
+  args.push_back(string("REQUEST_METHOD=") + req.get_method());
+  args.push_back("SERVER_PROTOCOL=HTTP/1.1");
+  //TODO: add adequate path info handler
+  //args.push_back(string("PATH_INFO=") + req.get_request_target());
+  // char pbuf[100];
+  // getcwd(pbuf, 100);
+  
+  // args.push_back(string("PATH_TRANSLATED=") + pbuf + r.get_root() + req.get_request_target());
+  const char *fsn = realpath(r.get_file_name(req.get_request_target()).c_str(), NULL);
+  string full_script_name = fsn;
+  args.push_back(string("PATH_TRANSLATED=") + full_script_name);
+  char cad[100];
+  inet_ntop(AF_INET, &(addr.sin_addr.s_addr), cad, sizeof(sockaddr_in));
+  args.push_back(string("REMOTE_PORT=") + convert_to_string(ntohs(addr.sin_port)));
+  args.push_back(string("REMOTE_ADDR=") + cad);
+  sockaddr_in serv_addr;
+  socklen_t ssize = sizeof(sockaddr_in);
+  getsockname(req.get_socket(), (sockaddr*)&serv_addr, &ssize);
+  char cbd[100];
+  inet_ntop(AF_INET, &(serv_addr.sin_addr.s_addr), cbd, sizeof(sockaddr_in));
+  args.push_back(string("SERVER_NAME=") + cbd);
+  args.push_back(string("SERVER_PORT=") + convert_to_string(htons(serv_addr.sin_port)));
+  args.push_back(string("SCRIPT_NAME=") + req.get_request_target());
+  // args.push_back(string("SCRIPT_NAME=/"));//+ req.get_request_target());
+  args.push_back("GATEWAY_INTERFACE=CGI/1.1");
+  if (req.get_header_value("Content-Type").first) {
+    args.push_back(string("CONTENT_TYPE=") +
+		   req.get_header_value("Content-Type").second);
+  }
+  const char **vv = make_argument_vector(args);
+  return vv;
+}
+
 void http_server::process_cgi(http_request& req, sockaddr_in addr)
 {
   serv_log("Processing cgi");
@@ -216,52 +267,16 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
     close(fd2[0]);
     dup2(fd1[0], 0);
     dup2(fd2[1], 1);
-    //All of the shit, concerning setting variables should exist in
-    //other function
-    const char **vars = new const char*[100];
-    for (int i = 0; i < 100; i++) {
-      vars[i] = NULL;
-    }
-    list<string> args;
-    args.push_back(string("CONTENT_LENGTH=")
-		   + convert_to_string(req.get_body_size()));
-    args.push_back("QUERY_STRING=");
-    args.push_back("SERVER_SOFTWARE=Eugene_server 0.1");
-    args.push_back(string("REQUEST_METHOD=") + req.get_method());
-    args.push_back("SERVER_PROTOCOL=HTTP/1.1");
-    args.push_back(string("PATH_INFO=") + req.get_request_target());
-    char pbuf[100];
-    getcwd(pbuf, 100);
-    args.push_back(string("PATH_TRANSLATED=") + pbuf + "/html" + req.get_request_target());
-    char cad[100];
-    inet_ntop(AF_INET, &(addr.sin_addr.s_addr), cad, sizeof(sockaddr_in));
-    args.push_back(string("REMOTE_PORT=") + convert_to_string(ntohs(addr.sin_port)));
-    args.push_back(string("REMOTE_ADDR=") + cad);
-    sockaddr_in serv_addr;
-    socklen_t ssize = sizeof(sockaddr_in);
-    getsockname(req.get_socket(), (sockaddr*)&serv_addr, &ssize);
-    char cbd[100];
-    inet_ntop(AF_INET, &(serv_addr.sin_addr.s_addr), cbd, sizeof(sockaddr_in));
-    args.push_back(string("SERVER_NAME=") + cbd);
-    args.push_back(string("SERVER_PORT=") + convert_to_string(htons(serv_addr.sin_port)));
-    args.push_back(string("SCRIPT_NAME=") + req.get_request_target());
-    //args.push_back("SCRIPT_NAME=html/test.php");
-    //args.push_back("SCRIPT_FILENAME=/home/eugene/school/server/html/test.php");
-    args.push_back("GATEWAY_INTERFACE=CGI/1.1");
-    if (req.get_header_value("Content-Type").first) {
-      args.push_back(string("CONTENT_TYPE=") +
-		     req.get_header_value("Content-Type").second);
-    }
-    const char **vv = make_argument_vector(args);
-    for (size_t i = 0; i < args.size(); i++) {
-      fprintf(stderr, "%s\n", vv[i]);
-    }
+    http_location &r = get_location_from_target(req.get_request_target());
+    const char **vv = compose_cgi_envp(req, addr);
+    chdir(r.get_root().c_str());
+    //make it a fucking path
     const char *k[10];
-    k[0] = "/usr/bin/php-cgi";
+    k[0] = r.cgi_path(req.get_request_target()).c_str();
     k[1] = NULL;
     // k[1] = "-f";
-    k[2] = "/home/eugene/school/server/html/test.php";
-    k[3] = NULL;
+    // k[2] = "/home/eugene/school/server/html/test.php";
+    // k[3] = NULL;
     execve("/usr/bin/php-cgi", (char* const *)k,  (char* const *)vv);
     exit(0);
   }
@@ -271,13 +286,18 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
     if (req.get_body_size() != 0) {
       req.print_body_into_fd(fd1[1]);
     }
-    close(fd1[1]);
-    char buf[512];
-    int n = 0;
-    while ((n = read(fd2[0], buf, 512)) != 0) {
-      write(1, buf, n);
-    }
+    http_responce resp;
+    resp.set_socket(req.get_socket());
+    resp.set_cgi_fd(fd2[0]);
+    resp.handle_cgi();
+    // close(fd1[1]);
+    // char buf[512];
+    // int n = 0;
+    // while ((n = read(fd2[0], buf, 512)) != 0) {
+    //   write(1, buf, n);
+    // }
     int status;
+    close(fd2[0]);
     wait(&status);
   }
 }
@@ -301,10 +321,14 @@ void http_server::process_error(http_request &in, int status)
 {
   serv_log(string("Processing error '") + convert_to_string(status) + "' on target '"
 	   + in.get_request_target() + "'");
-  try {
-    
+  try {    
     http_responce resp(status);
     resp.set_socket(in.get_socket());
+    if (status == 405) {
+      http_location &r = get_location_from_target(in.get_request_target());
+      string t = r.compose_allowed_methods();
+      resp.add_header_field("Accept", t);
+    }
     string err_target = get_error_target_name(in.get_request_target());    
     if (err_target.length() == 0) {
       resp.set_body(get_default_err_page(status));      
@@ -402,9 +426,8 @@ deque<int>& http_server::get_sockets()
 
 bool http_server::is_cgi_request(string target_name)
 {
-  //change later for config-defined parameters;
-  //maybe it even shouldn't be here, i'm just trying some code exec
-  if (target_name.find(".php") == target_name.length() - 4)
+  http_location &r = get_location_from_target(target_name);
+  if (r.is_cgi_request(target_name))
     return true;
   return false;
 }

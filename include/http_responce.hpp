@@ -17,6 +17,7 @@ class http_responce: public http_message
   int status_code;
   string reason_phrase;
   string target_name;
+  int cgi_fd;
 private:
   void write_head();
 public:
@@ -54,6 +55,10 @@ public:
   void set_body(string s);
   void set_target_name(string s);
   string get_target_name() const;
+  void set_status(int st);
+  void print() const;
+  void set_cgi_fd(int fd);
+  void handle_cgi();
 };
 
 

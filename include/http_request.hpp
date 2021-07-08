@@ -19,8 +19,7 @@ protected:
   string request_target;
   string http_version;
   bool req_is_complete;
-  ssize_t read_block(size_t size = BUFSIZ);
-  size_t msg_body_position() const;
+  void parse_start_line(string &inp);
 public:
   http_request();
   http_request(int fd);

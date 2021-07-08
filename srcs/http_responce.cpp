@@ -1,4 +1,5 @@
 #include <string>
+#include <algorithm>
 #include <sstream>
 #include <map>
 #include <vector>
@@ -18,12 +19,20 @@
 #include "http_utils.hpp"
 
 
+
 http_responce::http_responce()
 {
+  cgi_fd = -1;
   http_version = "HTTP/1.1";
 };
 
 http_responce::http_responce(int st)
+{
+  cgi_fd = -1;
+  set_status(st);
+}
+
+void http_responce::set_status(int st)
 {
   http_version = "HTTP/1.1";
   status_code = st;
@@ -34,11 +43,17 @@ http_responce::http_responce(int st)
   case 301:
     reason_phrase = "Moved Permanently";
     break;
-  case 404:
-    reason_phrase = "Not Found";
+  case 302:
+    reason_phrase = "Found";
     break;
   case 400:
     reason_phrase = "Bad Request";
+    break;
+  case 404:
+    reason_phrase = "Not Found";
+    break;
+  case 405:
+    reason_phrase = "Method Not Allowed";
     break;
   case 501:
     reason_phrase = "Not Implemented";
@@ -48,7 +63,7 @@ http_responce::http_responce(int st)
     throw bad_status();
     break;
   }
-};
+}
 
 void http_responce::set_body(string s)
 {
@@ -82,7 +97,6 @@ void http_responce::write_responce()
     }
     delete[] buf;
   }
-  //CGI Should be processed somewhere here
   else {
     add_header_field("Connection", "closed");
     //Just the static pages
@@ -200,4 +214,51 @@ void http_responce::write_head()
     }
     head.erase(head.begin(), head.begin() + n);
   }
+}
+
+void http_responce::print() const
+{
+  cout << "Responce:\n";
+  cout << "HTTP version: \'" << http_version << "\'" << endl;
+  cout << "Status: '" << status_code << "'" << endl;
+  cout <<"Reason: \'" << reason_phrase << "\'" << endl;
+  for (multimap<string, string>::const_iterator i = header_lines.begin(); i != header_lines.end(); i++) {
+    cout << i->first <<": " << i->second<< "\r\n";
+  }
+  string msg_body(body.begin(), body.end());
+  if (msg_body.length() != 0) 
+    cout<<msg_body<<std::endl;
+}
+
+
+void http_responce::set_cgi_fd(int fd)
+{
+  cgi_fd = fd;
+}
+
+void http_responce::handle_cgi()
+{
+  string head_end = "\r\n\r\n";
+  //add poll
+  char buf[512];
+  ssize_t n;
+  while (read_nb_block(BUFSIZ, cgi_fd) > 0)
+    ;
+  string inp;
+  inp.insert(inp.end(), raw.begin(), raw.end());
+  parse_header_fields(inp);
+  if (get_header_value("status").first) {
+    string t = get_header_value("status").second;
+    stringstream ss;
+    ss << t;
+    int st;
+    ss >> st;
+    set_status(st);
+  }
+  else {
+    set_status(200);
+  }
+  body.assign(raw.begin() + msg_body_position(), raw.end());  
+  print();
+  write_responce();
 }

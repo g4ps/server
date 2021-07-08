@@ -30,6 +30,12 @@
 
 using namespace std;
 
+struct http_cgi
+{
+  string extention;
+  string path;
+};
+
 class http_location
 {
   list<string> methods;
@@ -40,9 +46,8 @@ class http_location
   bool upload_accept;
   string upload_folder;
   map<int, string> error_pages;
-  list<string> index;
-  
-  // list<http_cgi> cgi;
+  list<string> index;  
+  list<http_cgi> cgi;
 private:
   bool is_path(string s) const;
 public:
@@ -85,6 +90,10 @@ public:
   bool is_located(string target) const;
   size_t get_path_depth() const;
   string get_index_page(string s);
+  void add_cgi(string ext, string filename);
+  string compose_allowed_methods() const;
+  bool is_cgi_request(string target) const;
+  string cgi_path(string target) const;
 };
 
 #endif

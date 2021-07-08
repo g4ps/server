@@ -31,12 +31,6 @@
 
 using namespace std;
 
-class http_cgi
-{
-  string extention;
-  string path;  
-};
-
 class http_server
 {
 private:
@@ -71,6 +65,12 @@ public:
       return "Cannot process target";
     }
   };
+  class method_not_allowed: public exception {
+    const char* what() const throw()
+    {
+      return "Requested method is not allowed in this location";
+    }
+  };
   void add_socket(string addr, short port);
   void add_socket(sockaddr_in*);
   //  void start();
@@ -95,6 +95,7 @@ public:
   http_location& get_location_from_target(string s);
   void add_location(http_location in);
   void process_redirect(http_request &in, int status, string target);
+  const char** compose_cgi_envp(http_request& req, sockaddr_in addr);
 };
 
 string test_page();

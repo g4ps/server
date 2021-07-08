@@ -98,13 +98,11 @@ string http_request::get_http_version() const
   return start_line.substr(pos + 1, tpos - pos - 1);
 }
 
-
-void http_request::parse_head()
+void http_request::parse_start_line(string &inp)
 {
   //CRLF as string for simple usage
   string crlf = "\r\n";
 
-  string inp(raw.begin(), raw.end());
   //getting start_line
   //start line BNF: request-line / status-line
   if (inp.empty()) {
@@ -121,45 +119,16 @@ void http_request::parse_head()
   tpos += crlf.length();
   start_line = inp.substr(pos, tpos);
   inp.erase(pos, tpos - pos);
+}
 
-  //getting all the header-fields
-  //header-field BNF is field-name ":" OWS field-value OWS
-  while (inp.compare(0, crlf.length(), crlf) != 0) {
-    pos = 0;
-    tpos = pos;
-    //field-name is token, so
-    string field_name = get_token(inp);
-
-    //checking for sanity
-    if (inp.empty()) {
-      serv_log("Invalid header-field: eof when expected \":\" OWS field-value");
-    }
-
-    //checking ":" for existence and acting accordingly
-    if (inp[0] != ':') {
-      serv_log("Invalid header-field: expected ':', got " + inp);
-      throw invalid_head();
-    }
-    inp.erase(0, 1);
-    skip_ows(inp);
-
-    //getting field value
-    string field_value = get_field_value(inp);
-
-    if (inp.empty()) {
-      serv_log("Invalid header-field: expected CRLF, got EOF");
-      throw invalid_head();
-    }
-
-    if (inp.compare(0, crlf.length(), crlf) != 0)  {
-      serv_log("Invalid header-field: expected CRLF, got " + inp);
-      throw invalid_head();
-    }
-    inp.erase(0, 2);
-    str_to_lower(field_name);
-    //str_to_lower(field_value);
-    header_lines.insert(make_pair(field_name, field_value));
-  }
+void http_request::parse_head()
+{
+  string crlf = "\r\n";
+  string inp(raw.begin(), raw.end());
+  size_t pos = 0;
+  size_t tpos = inp.find(crlf);
+  parse_start_line(inp);
+  parse_header_fields(inp);
   method = get_method();
   request_target = get_request_target();
   http_version = get_http_version();
@@ -207,62 +176,4 @@ void http_request::get_msg_body()
     
   }
   //TODO add chuncked request
-}
-
-size_t http_request::msg_body_position() const
-{
-  //This method returns the position in array 'raw'
-  //of the start of the message body
-  string head_end = "\r\n\r\n";
-  vector<char>::const_iterator it;
-  it = search(raw.begin(), raw.end(),
-	      head_end.begin(), head_end.end());
-  if (it == raw.end()) {
-    serv_log("ERROR: http_request;:msg_body_position was "
-	     "called on request without header");
-    throw invalid_function_call();
-  }
-  it += head_end.length();
-  return it - raw.begin();
-}
-
-ssize_t http_request::read_block(size_t size)
-{
-  char buf[size];
-  bzero(buf, size);
-  ssize_t n;
-  pollfd fdarr;
-  fdarr.fd = sock_fd;
-  fdarr.events = 0;
-  fdarr.events |= POLLIN;
-  if (poll(&fdarr, 1, 5000) <= 0) {
-    close(sock_fd);
-    throw invalid_head();
-  }
-  if (fdarr.revents & POLLERR) {
-    serv_log(string("poll ERROR: ") + strerror(errno));
-    close(sock_fd);
-    throw process_error();
-  }
-  else if (!(fdarr.revents & POLLIN)) {
-    serv_log(string("poll ERROR: ") + strerror(errno));
-    close(sock_fd);
-    throw process_error();
-  }
-  n = read(sock_fd, buf, BUFSIZ);
-  if (n < 0) {
-    serv_log("Read error: ");
-#ifdef NOT_SHIT
-    serv_log(strerror(errno));
-#endif
-    close(sock_fd);
-    throw invalid_head();
-  }
-  if (memchr(buf, '\0', n) != NULL) {
-    serv_log("Got \\0 in header");
-    close(sock_fd);
-    throw invalid_head();
-  }
-  raw.insert(raw.end(), buf, buf + n);
-  return n;
 }

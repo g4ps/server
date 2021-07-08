@@ -1,6 +1,7 @@
 #ifndef HTTP_MESSAGE_HPP
 #define HTTP_MESSAGE_HPP
 
+#include <cstdio>
 #include <string>
 #include <map>
 #include <vector>
@@ -26,7 +27,11 @@ protected:
   string get_token(string &str) const;
   string get_field_value(string &str) const;
   string get_obs_fold(string &s) const; 
-  string get_field_content(string &s) const;  
+  string get_field_content(string &s) const;
+  void parse_header_fields(string &inp);
+  ssize_t read_block(size_t size = BUFSIZ, int fd = -1);
+  ssize_t read_nb_block(size_t size = BUFSIZ, int fd = -1);
+  size_t msg_body_position() const;
 public:
   http_message();
   //http_message(string s, int inp_fd = -1);

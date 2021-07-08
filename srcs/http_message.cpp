@@ -1,7 +1,12 @@
 #include <string>
+#include <cstdio>
+#include <cerrno>
+#include <cstring>
+#include <poll.h>
 #include <map>
 #include <vector>
 #include <exception>
+#include <algorithm>
 
 #include "http_message.hpp"
 #include "http_utils.hpp"
@@ -164,9 +169,6 @@ void http_message::print() const
   cout << "Oh, hi there\n";
 }
 
-
-
-
 void http_message::set_socket(int fd)
 {
   sock_fd = fd;
@@ -222,4 +224,148 @@ void http_message::print_body_into_fd(int fd)
 void http_message::set_server(http_server *l)
 {
   serv = l;
+}
+
+
+void http_message::parse_header_fields(string &inp)
+{
+  string crlf = "\r\n";
+  size_t pos = 0;
+  size_t tpos = inp.find(crlf);
+  while (inp.compare(0, crlf.length(), crlf) != 0) {
+    pos = 0;
+    tpos = pos;
+    //field-name is token, so
+    string field_name = get_token(inp);
+
+    //checking for sanity
+    if (inp.empty()) {
+      serv_log("Invalid header-field: eof when expected \":\" OWS field-value");
+      throw invalid_state();
+    }
+
+    //checking ":" for existence and acting accordingly
+    if (inp[0] != ':') {
+      serv_log("Invalid header-field: expected ':', got " + inp);
+      throw invalid_state();
+    }
+    inp.erase(0, 1);
+    skip_ows(inp);
+
+    //getting field value
+    string field_value = get_field_value(inp);
+
+    if (inp.empty()) {
+      serv_log("Invalid header-field: expected CRLF, got EOF");
+      throw invalid_state();
+    }
+
+    if (inp.compare(0, crlf.length(), crlf) != 0)  {
+      serv_log("Invalid header-field: expected CRLF, got " + inp);
+      throw invalid_state();
+    }
+    inp.erase(0, 2);
+    str_to_lower(field_name);
+    //str_to_lower(field_value);
+    header_lines.insert(make_pair(field_name, field_value));
+  }
+}
+
+ssize_t http_message::read_block(size_t size, int fd)
+{
+  if (fd < 0)
+    fd = sock_fd;
+  char buf[size];
+  bzero(buf, size);
+  ssize_t n;
+  pollfd fdarr;
+  fdarr.fd = fd;
+  fdarr.events = 0;
+  fdarr.events |= POLLIN;
+  if (poll(&fdarr, 1, 5000) <= 0) {
+    close(fd);
+    throw invalid_state();
+  }
+  if (fdarr.revents & POLLERR) {
+    serv_log(string("poll ERROR: ") + strerror(errno));
+    close(fd);
+    throw invalid_state();
+  }
+  else if (!(fdarr.revents & POLLIN)) {
+    serv_log(string("poll ERROR: ") + strerror(errno));
+    close(fd);
+    throw invalid_state();
+  }
+  n = read(fd, buf, BUFSIZ);
+  if (n < 0) {
+    serv_log("Read error: ");
+#ifdef NOT_SHIT
+    serv_log(strerror(errno));
+#endif
+    close(fd);
+    throw invalid_state();
+  }
+  if (memchr(buf, '\0', n) != NULL) {
+    serv_log("Got \\0 in header");
+    close(fd);
+    throw invalid_state();
+  }
+  raw.insert(raw.end(), buf, buf + n);
+  return n;
+}
+
+ssize_t http_message::read_nb_block(size_t size, int fd)
+{
+  if (fd < 0)
+    fd = sock_fd;
+  char buf[size];
+  bzero(buf, size);
+  ssize_t n;
+  pollfd fdarr;
+  fdarr.fd = fd;
+  fdarr.events = 0;
+  fdarr.events |= POLLIN;
+  if (poll(&fdarr, 1, 5000) <= 0) {
+    close(fd);
+    throw invalid_state();
+  }
+  if (fdarr.revents & POLLERR) {
+    serv_log(string("poll ERROR: ") + strerror(errno));
+    close(fd);
+    throw invalid_state();
+  }
+  // else if (!(fdarr.revents & POLLIN)) {
+  //   serv_log(string("poll ERROR: ") + strerror(errno));
+  //   close(fd);
+  //   throw invalid_state();
+  // }
+  n = read(fd, buf, BUFSIZ);
+  if (n < 0) {
+    serv_log("Read error: ");
+#ifdef NOT_SHIT
+    serv_log(strerror(errno));
+#endif
+    close(fd);
+    throw invalid_state();
+    return 0;
+  }
+  raw.insert(raw.end(), buf, buf + n);
+  return n;
+}
+
+size_t http_message::msg_body_position() const
+{
+  //This method returns the position in array 'raw'
+  //of the start of the message body
+  string head_end = "\r\n\r\n";
+  vector<char>::const_iterator it;
+  it = search(raw.begin(), raw.end(),
+	      head_end.begin(), head_end.end());
+  if (it == raw.end()) {
+    serv_log("ERROR: http_request;:msg_body_position was "
+	     "called on request without header");
+    throw invalid_state();
+  }
+  it += head_end.length();
+  return it - raw.begin();
 }
