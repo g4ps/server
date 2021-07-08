@@ -246,6 +246,7 @@ void http_responce::handle_cgi()
     ;
   string inp;
   inp.insert(inp.end(), raw.begin(), raw.end());
+  cout << "Cgi return: " << inp << endl;
   parse_header_fields(inp);
   if (get_header_value("status").first) {
     string t = get_header_value("status").second;

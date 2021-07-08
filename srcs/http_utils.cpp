@@ -60,12 +60,11 @@ const char ** make_argument_vector(list<string> s)
   list<string>::const_iterator it;
   int i = 0;
   for (it = s.begin(); it != s.end(); it++) {
-    const char *str = it->c_str();
-    char *in = new char[it->length() + 1];
-    strcpy(in, str);
-    ret[i] = in;
+    const char *str = strdup(it->c_str());
+    ret[i] = str;
     i++;
   }
+  ret[i] = NULL;
   return ret;
 }
 

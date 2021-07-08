@@ -229,7 +229,7 @@ const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
   // getcwd(pbuf, 100);
   
   // args.push_back(string("PATH_TRANSLATED=") + pbuf + r.get_root() + req.get_request_target());
-  const char *fsn = realpath(r.get_file_name(req.get_request_target()).c_str(), NULL);
+  const char *fsn = realpath(strdup(r.get_file_name(req.get_request_target()).c_str()), NULL);
   string full_script_name = fsn;
   args.push_back(string("PATH_TRANSLATED=") + full_script_name);
   char cad[100];
@@ -254,6 +254,12 @@ const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
   return vv;
 }
 
+// const char **
+// compose_cgi_argv(http_request &req)
+// {
+  
+// }
+
 void http_server::process_cgi(http_request& req, sockaddr_in addr)
 {
   serv_log("Processing cgi");
@@ -265,19 +271,40 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
   if (pid == 0) {
     close(fd1[1]);
     close(fd2[0]);
-    dup2(fd1[0], 0);
-    dup2(fd2[1], 1);
-    http_location &r = get_location_from_target(req.get_request_target());
-    const char **vv = compose_cgi_envp(req, addr);
-    chdir(r.get_root().c_str());
-    //make it a fucking path
-    const char *k[10];
-    k[0] = r.cgi_path(req.get_request_target()).c_str();
-    k[1] = NULL;
-    // k[1] = "-f";
-    // k[2] = "/home/eugene/school/server/html/test.php";
-    // k[3] = NULL;
-    execve("/usr/bin/php-cgi", (char* const *)k,  (char* const *)vv);
+    try {
+      http_location &r = get_location_from_target(req.get_request_target());
+      const char **vv = compose_cgi_envp(req, addr);
+      chdir(r.get_root().c_str());
+      //make it a fucking path
+      const char *k[10];
+      k[0] = strdup(r.cgi_path(req.get_request_target()).c_str());
+      k[1] = NULL;
+      // k[1] = "-f";
+      // k[2] = "/home/eugene/school/server/html/test.php";
+      // k[3] = NULL;
+      const char** arg;
+      cerr << "Argv:\n";
+      for (arg = k; *arg != NULL; arg++) {
+	cerr << *arg << endl;
+      }
+      cerr << "Envp:\n";
+      for (arg = vv; *arg != NULL; arg++) {
+	cerr << *arg << endl;
+      }
+      const char *fn = strdup(r.cgi_path(req.get_request_target()).c_str());
+      dup2(fd1[0], 0);
+      dup2(fd2[1], 1);
+      cerr << "PHP: EXECUTING\n";
+      if (execve(fn, (char* const *)k,  (char* const*)vv) < 0) {
+	cerr << "PHP: EXECVE_FAIL\n";
+	cerr << "Something went wrong during execve: " << strerror(errno) << endl;
+	exit(1);
+      }
+    }
+    catch(exception &e) {
+      cerr << string("Something went wrong during execution of cgi script: ") + e.what();
+      exit(1);
+    }
     exit(0);
   }
   else {
@@ -286,10 +313,15 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
     if (req.get_body_size() != 0) {
       req.print_body_into_fd(fd1[1]);
     }
-    http_responce resp;
-    resp.set_socket(req.get_socket());
-    resp.set_cgi_fd(fd2[0]);
-    resp.handle_cgi();
+    try {
+      http_responce resp;
+      resp.set_socket(req.get_socket());
+      resp.set_cgi_fd(fd2[0]);
+      resp.handle_cgi();
+    }
+    catch(exception &e) {
+      serv_log("Something bad happened while executing CGI\n");
+    }
     // close(fd1[1]);
     // char buf[512];
     // int n = 0;
@@ -299,6 +331,17 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
     int status;
     close(fd2[0]);
     wait(&status);
+    if (WIFEXITED(status)) {
+      serv_log("CGI process exited normally");
+    }
+    else {
+      serv_log("CGI process exited abnormaly");
+      if (WIFSIGNALED(status)) {
+	int sign = WTERMSIG(status);
+	serv_log(string("Cause of exit: SIGNAL ") + convert_to_string(sign)
+		 + " (" + strsignal(sign) + ")");
+      }
+    }
   }
 }
 

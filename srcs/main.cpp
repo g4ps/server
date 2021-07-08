@@ -128,7 +128,7 @@ main(int argc, char **argv)
     l1.set_path("/");
     l1.set_root("html/");
     l1.add_index("index.html");
-    l1.add_cgi(".php", "/usr/bin/php");
+    l1.add_cgi(".php", "/usr/bin/php-cgi");
     http_location l2;
     l2.set_root("html/new_site/");
     l2.set_path("/another/");
