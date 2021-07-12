@@ -162,11 +162,11 @@ void http_server::serve(int fd, sockaddr_in addr)
 void http_server::process_request(http_request& msg, sockaddr_in addr)
 {
   string type = msg.get_method();
-  http_location &r = get_location_from_target(msg.get_request_target());
+  http_location &r = get_location_from_target(msg.get_request_path());
   if (!r.is_method_accepted(msg.get_method())) {
     throw method_not_allowed();
   }
-  if (r.is_cgi_request(msg.get_request_target())) {
+  if (r.is_cgi_request(msg.get_request_path())) {
     process_cgi(msg, addr);
     return ;
   }
@@ -184,8 +184,8 @@ void http_server::process_request(http_request& msg, sockaddr_in addr)
 void http_server::process_get_request(http_request& req, sockaddr_in addr)
 {
   try {
-    http_location &r = get_location_from_target(req.get_request_target());
-    string file_name = r.get_file_name(req.get_request_target());
+    http_location &r = get_location_from_target(req.get_request_path());
+    string file_name = r.get_file_name(req.get_request_path());
     serv_log(string("Path of location: '") + r.get_path() + "'");
     serv_log(string("Requested file: '") + file_name + "'");
     http_responce resp(200);
@@ -197,7 +197,7 @@ void http_server::process_get_request(http_request& req, sockaddr_in addr)
     string t = req.get_header_value("host").second;
     if (t[t.length() - 1] == '/')
       t = t.substr(0, t.length() - 1);
-    t += req.get_request_target();
+    t += req.get_request_path();
     t += "/";
     t = string("http://") + t;
     process_redirect(req, 301, t);
@@ -218,14 +218,14 @@ void http_server::process_get_request(http_request& req, sockaddr_in addr)
 
 const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
 {
-  http_location &r = get_location_from_target(req.get_request_target());
-  string script_name = r.get_uri_full_path(req.get_request_target());
+  http_location &r = get_location_from_target(req.get_request_path());
+  string script_name = r.get_uri_full_path(req.get_request_path());
   list<string> args;
   if (req.get_body_size() != 0) {
     args.push_back(string("CONTENT_LENGTH=")
 		   + convert_to_string(req.get_body_size()));
   }
-  args.push_back("QUERY_STRING=");
+  args.push_back(string ("QUERY_STRING=") + req.get_request_query());
   args.push_back("SERVER_SOFTWARE=Eugene_server 0.1");
   args.push_back(string("REQUEST_METHOD=") + req.get_method());
   args.push_back("SERVER_PROTOCOL=HTTP/1.1");
@@ -235,7 +235,7 @@ const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
   // getcwd(pbuf, 100);
   
   // args.push_back(string("PATH_TRANSLATED=") + pbuf + r.get_root() + req.get_request_target());
-  const char *fsn = realpath(strdup(r.get_file_name(req.get_request_target()).c_str()), NULL);
+  const char *fsn = realpath(strdup(r.get_file_name(req.get_request_path()).c_str()), NULL);
   string full_script_name = fsn;
   args.push_back(string("PATH_TRANSLATED=") + full_script_name);
   char cad[100];
@@ -281,11 +281,11 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
     close(fd1[1]);
     close(fd2[0]);
     try {
-      http_location &r = get_location_from_target(req.get_request_target());
+      http_location &r = get_location_from_target(req.get_request_path());
       const char **vv = compose_cgi_envp(req, addr);
       //make it a fucking path
       const char *k[10];
-      k[0] = strdup(r.cgi_path(req.get_request_target()).c_str());
+      k[0] = strdup(r.cgi_path(req.get_request_path()).c_str());
       k[1] = NULL;
       // k[1] = "-f";
       // k[2] = "/home/eugene/school/server/html/test.php";
@@ -299,7 +299,7 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       // for (arg = vv; *arg != NULL; arg++) {
       // 	cerr << *arg << endl;
       // }
-      const char *fn = strdup(r.cgi_path(req.get_request_target()).c_str());
+      const char *fn = strdup(r.cgi_path(req.get_request_path()).c_str());
       dup2(fd1[0], 0);
       dup2(fd2[1], 1);
       if (chdir(r.get_root().c_str()) < 0) {
@@ -359,7 +359,7 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
 
 void http_server::process_redirect(http_request &in, int status, string target)
 {
-  serv_log(string("Processing redirect from '") + in.get_request_target()
+  serv_log(string("Processing redirect from '") + in.get_request_path()
 	   + "' to '" + target + "'");
   try {
     http_responce resp(status);
@@ -380,11 +380,11 @@ void http_server::process_error(http_request &in, int status)
     http_responce resp(status);
     resp.set_socket(in.get_socket());
     if (status == 405) {
-      http_location &r = get_location_from_target(in.get_request_target());
+      http_location &r = get_location_from_target(in.get_request_path());
       string t = r.compose_allowed_methods();
       resp.add_header_field("Accept", t);
     }
-    string err_target = get_error_target_name(in.get_request_target());    
+    string err_target = get_error_target_name(in.get_request_path());    
     if (err_target.length() == 0) {
       resp.set_body(get_default_err_page(status));      
     }

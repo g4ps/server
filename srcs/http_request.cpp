@@ -44,12 +44,17 @@ void http_request::recieve()
   // else if (raw.find("\r\n\r\n") + 2 != raw.length()) {
   //   //error here
   // }
+  print();
 }
 
 void http_request::print() const
 {
-  cout<<"Method: \'" << get_method() << "\'" <<  endl;
+  cout << "Method: \'" << get_method() << "\'" <<  endl;
   cout<<"Request target: \'" << get_request_target() << "\'" << endl;
+  cout << "Scheme: '" << scheme << "'" << endl;
+  cout << "Path: '" << request_path << "'" << endl;
+  cout << "Query: '" << query << "'" << endl;
+  cout << "Fragment: '" << fragment << "'" << endl;
   cout<<"HTTP version: \'" << get_http_version() << "\'" << endl;
   for (multimap<string, string>::const_iterator i = header_lines.begin(); i != header_lines.end(); i++) {
     cout << i->first <<": " << i->second<< "\r\n";
@@ -113,6 +118,39 @@ void http_request::parse_start_line(string &inp)
     throw invalid_state();
   }
   http_version = start_line.substr(pos + 1, tpos - pos - 1);
+
+  //Parsing target and setting queries and such
+
+  string temp = request_target;
+  if (temp.find("://") != string::npos) {
+    scheme = temp.substr(0, temp.find("://"));
+    temp.erase(0, scheme.length() + 3);
+  }
+  if (temp.find("://") != string::npos) {
+    serv_log("ERROR: double '://' in target");
+    throw invalid_head();
+  }
+  if (temp.find("/") != string::npos) {
+    host = temp.substr(0, temp.find("/"));
+    temp.erase(0, temp.find("/"));
+  }
+  if (temp.find("#") != string::npos) {
+    fragment = temp.substr(temp.find("#"));
+    temp = temp.substr(0, temp.find("#"));
+    if (fragment.find("#") != string::npos) {
+      serv_log("ERROR: double '#' in fragment");
+      throw invalid_head();
+    }
+  }
+  if (temp.find("?") != string::npos) {
+    query = temp.substr(temp.find("?") + 1);
+    temp = temp.substr(0, temp.find("?"));
+    if (fragment.find("?") != string::npos) {
+      serv_log("ERROR: double '#' in query");
+      throw invalid_head();      
+    }
+  }
+  request_path = temp;
 }
 
 void http_request::parse_head()
@@ -167,4 +205,14 @@ void http_request::get_msg_body()
     
   }
   //TODO add chuncked request
+}
+
+string http_request::get_request_path() const
+{
+  return request_path;
+}
+
+string http_request::get_request_query() const
+{
+  return query;
 }

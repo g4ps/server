@@ -17,6 +17,12 @@ class http_request: public http_message
 protected:
   string method;
   string request_target;
+  string scheme;
+  string host;
+  string port;
+  string request_path;
+  string query;
+  string fragment;
   string http_version;
   bool req_is_complete;
   void parse_start_line(string &inp);
@@ -59,6 +65,8 @@ public:
   string get_method() const;
   string get_request_target() const;
   string get_http_version() const;
+  string get_request_path() const;
+  string get_request_query() const;
 };
 
 #endif
