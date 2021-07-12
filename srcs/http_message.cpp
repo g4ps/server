@@ -383,7 +383,7 @@ http_message::get_cgi_header_values()
   multimap<string, string>::const_iterator it;
   for (it = header_lines.begin(); it != header_lines.end(); it++){
     ret.push_back(string("HTTP_") + str_to_upper(it->first)
-		  + "=" + str_to_upper(it->second));
+		  + "=" + it->second);
   }
   return ret;
 }
