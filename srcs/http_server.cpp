@@ -221,6 +221,8 @@ const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
   http_location &r = get_location_from_target(req.get_request_path());
   string script_name = r.get_uri_full_path(req.get_request_path());
   list<string> args;
+  args = req.get_cgi_header_values();
+  args.push_back(string("DOCUMENT_ROOT=") + r.get_root());
   if (req.get_body_size() != 0) {
     args.push_back(string("CONTENT_LENGTH=")
 		   + convert_to_string(req.get_body_size()));

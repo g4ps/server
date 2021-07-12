@@ -7,6 +7,7 @@
 #include <vector>
 #include <exception>
 #include <algorithm>
+#include <list>
 
 #include "http_message.hpp"
 #include "http_utils.hpp"
@@ -372,4 +373,17 @@ size_t http_message::msg_body_position() const
   }
   it += head_end.length();
   return it - raw.begin();
+}
+
+
+list<string>
+http_message::get_cgi_header_values()
+{
+  list<string> ret;
+  multimap<string, string>::const_iterator it;
+  for (it = header_lines.begin(); it != header_lines.end(); it++){
+    ret.push_back(string("HTTP_") + str_to_upper(it->first)
+		  + "=" + str_to_upper(it->second));
+  }
+  return ret;
 }

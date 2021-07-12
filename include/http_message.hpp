@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <string>
+#include <list>
 #include <map>
 #include <vector>
 #include <exception>
@@ -67,6 +68,7 @@ public:
   size_t get_body_size() const;
   void print_body_into_fd(int fd);
   void set_server(http_server *s);
+  list<string> get_cgi_header_values();
 };
 
 #endif

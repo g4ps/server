@@ -90,3 +90,12 @@ bool does_exist(string target)
   }
   return true;
 }
+
+string str_to_upper(string req)
+{
+  string ret = req;
+  for (ssize_t i = 0; i < ret.length(); i++) {
+    ret[i] = toupper(ret[i]);    
+  }
+  return ret;
+}

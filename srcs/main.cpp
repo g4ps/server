@@ -127,7 +127,7 @@ main(int argc, char **argv)
     l1.add_method("POST");
     l1.set_path("/");
     //    l1.set_root("/home/eugene/my_quiz");
-    l1.set_root("/home/eugene/my_quiz/");
+    l1.set_root("/home/eugene/nquiz/");
     l1.add_index("index.html");
     l1.add_index("index.php");
     l1.add_cgi(".php", "/usr/bin/php-cgi");
@@ -137,11 +137,19 @@ main(int argc, char **argv)
     l2.add_index("index.html");
     l2.add_method("GET");
     l2.add_method("POST");
+    http_location l3;
+    l3.set_root("/usr/share/webapps/phpMyAdmin/");
+    l3.add_method("GET");
+    l3.add_method("POST");    
+    l3.add_index("index.php");
+    l3.add_cgi(".php", "/usr/bin/php-cgi");
+    l3.set_path("/phpmyadmin/");
     s2.add_socket("0.0.0.0", 8002);
     s2.add_location(l2);
     s2.add_location(l1);
     s1.add_location(l1);
     s1.add_location(l2);
+    s2.add_location(l3);
     w1.add_server(s1);
     w1.add_server(s2);
   }

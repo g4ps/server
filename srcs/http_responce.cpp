@@ -246,8 +246,8 @@ void http_responce::print() const
     cout << i->first <<": " << i->second<< "\r\n";
   }
   string msg_body(body.begin(), body.end());
-  // if (msg_body.length() != 0) 
-  //   cout<<msg_body<<std::endl;
+  if (msg_body.length() != 0) 
+    cout<<msg_body<<std::endl;
 }
 
 
