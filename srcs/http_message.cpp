@@ -217,9 +217,31 @@ size_t http_message::get_body_size() const
 
 void http_message::print_body_into_fd(int fd)
 {
-  char buf[4096];
-  copy(body.begin(), body.end(), buf);
-  write(fd, buf, body.size());
+  char *buf = new char[BUFSIZ];
+  pollfd pfd;
+  pfd.fd = fd;
+  ssize_t comp = 0;
+  while (comp != body.size()) {
+    pfd.fd = fd;
+    pfd.events = 0 | POLLOUT;
+    ssize_t last = comp + BUFSIZ;
+    if (last > body.size())
+      last = body.size();
+    copy(body.begin() + comp, body.begin() + last, buf);
+    poll(&pfd, 1, 5000);
+    if (pfd.revents & POLLERR) {
+      serv_log(string("ERROR: print_body_into_fd: ") + strerror(errno));
+      throw invalid_state();
+    }
+    ssize_t ret;
+    ret = write(fd, buf, last - comp);
+    if (ret < 0) {
+      serv_log(string("ERROR: print_body_into_fd: ") + strerror(errno));
+      throw invalid_state();
+    }
+    comp += ret;
+  }
+  delete [] buf;
 }
 
 void http_message::set_server(http_server *l)
@@ -310,11 +332,11 @@ ssize_t http_message::read_block(size_t size, int fd)
     close(fd);
     throw invalid_state();
   }
-  if (memchr(buf, '\0', n) != NULL) {
-    serv_log("Got \\0 in header");
-    close(fd);
-    throw invalid_state();
-  }
+  // if (memchr(buf, '\0', n) != NULL) {
+  //   serv_log("Got \\0 in header");
+  //   close(fd);
+  //   throw invalid_state();
+  // }
   raw.insert(raw.end(), buf, buf + n);
   return n;
 }

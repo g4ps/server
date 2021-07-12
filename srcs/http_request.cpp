@@ -61,8 +61,8 @@ void http_request::print() const
   }
   cout<<"\r\n";
   string msg_body(body.begin(), body.end());
-  if (msg_body.length() != 0) 
-    cout<<msg_body<<std::endl;
+  // if (msg_body.length() != 0) 
+  //   cout<<msg_body<<std::endl;
 }
 
 string http_request::get_method() const 
