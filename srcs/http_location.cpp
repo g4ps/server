@@ -181,9 +181,40 @@ size_t http_location::get_path_depth() const
 
 void http_location::add_cgi(string ext, string filename)
 {
+  list<string> p;
+  
+  bool ins = false;
+  bool inq = false;
+  string add;
+  for (ssize_t i = 0; i < filename.length(); i++) {
+    if (filename[i] == '\'') {
+      if (inq)
+	inq = false;
+      else
+	inq = true;
+    }
+    if (filename[i] == ' ' && !inq) {
+      if (ins) {
+	p.push_back(add);
+	add.clear();
+      }
+      ins = false;      
+    }
+    else {
+      ins = true;
+      add += filename[i];
+    }
+  }
+  if (add.length() != 0) {
+    p.push_back(add);
+  }
+  if (!does_exist(p.front())) {
+    serv_log(string("ERROR: file '") + p.front() + "' does not exist");
+    throw invalid_state();
+  }
   http_cgi n;
   n.extention = ext;
-  n.path = filename;
+  n.path = p;
   cgi.push_back(n);
 }
 
@@ -221,20 +252,24 @@ bool http_location::is_cgi_request(string t) const
   return false;
 }
 
-string http_location::cgi_path(string t) const
+list<string> http_location::cgi_path(string t) const
 {
   string target = get_file_name(t);
+  list<string> ret;
   list<http_cgi>::const_iterator it;
   for (it = cgi.begin(); it != cgi.end(); it++) {
     string curr = it->extention;
     string temp = target;
     if (curr.length() < temp.length()) {
       temp = temp.substr(target.length() - curr.length(), curr.length());
-      if (temp == curr)
+      if (temp == curr) {
 	return it->path;
+      }      
     }
   }
-  return "";
+  serv_log("ERROR: cgi was not found");
+  throw invalid_state();
+  
 }
 
 string http_location::get_uri_full_path(string t) const

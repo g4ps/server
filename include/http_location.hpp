@@ -33,7 +33,7 @@ using namespace std;
 struct http_cgi
 {
   string extention;
-  string path;
+  list<string> path;
 };
 
 class http_location
@@ -93,7 +93,7 @@ public:
   void add_cgi(string ext, string filename);
   string compose_allowed_methods() const;
   bool is_cgi_request(string target) const;
-  string cgi_path(string target) const;
+  list<string> cgi_path(string target) const;
   string get_uri_full_path(string target) const;
 };
 

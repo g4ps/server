@@ -212,7 +212,7 @@ void http_server::process_get_request(http_request& req, sockaddr_in addr)
     process_error(req, 403);
   }
   catch(exception &e) {
-    serv_log("Something went terribly wrong during get request");
+    serv_log(string("Something went terribly wrong during get request: ") + e.what());
   }
 }
 
@@ -232,7 +232,7 @@ const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
   args.push_back(string("REQUEST_METHOD=") + req.get_method());
   args.push_back("SERVER_PROTOCOL=HTTP/1.1");
   //TODO: add adequate path info handler
-  //args.push_back(string("PATH_INFO=") + req.get_request_target());
+  //  args.push_back(string("PATH_INFO"));// + req.get_request_target());
   // char pbuf[100];
   // getcwd(pbuf, 100);
   
@@ -286,9 +286,9 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       http_location &r = get_location_from_target(req.get_request_path());
       const char **vv = compose_cgi_envp(req, addr);
       //make it a fucking path
-      const char *k[10];
-      k[0] = strdup(r.cgi_path(req.get_request_path()).c_str());
-      k[1] = NULL;
+      const char **k = make_argument_vector(r.cgi_path(req.get_request_path()));
+      // k[0] = strdup(r.cgi_path(req.get_request_path()).c_str());
+      // k[1] = NULL;
       // k[1] = "-f";
       // k[2] = "/home/eugene/school/server/html/test.php";
       // k[3] = NULL;
@@ -301,7 +301,7 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       // for (arg = vv; *arg != NULL; arg++) {
       // 	cerr << *arg << endl;
       // }
-      const char *fn = strdup(r.cgi_path(req.get_request_path()).c_str());
+      // const char *fn = strdup(r.cgi_path(req.get_request_path()).c_str());
       dup2(fd1[0], 0);
       dup2(fd2[1], 1);
       if (chdir(r.get_root().c_str()) < 0) {
@@ -310,7 +310,7 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
 	exit(1);
       }
       cerr << "PHP: EXECUTING\n";
-      if (execve(fn, (char* const *)k,  (char* const*)vv) < 0) {
+      if (execve(k[0], (char* const *)k,  (char* const*)vv) < 0) {
 	cerr << "PHP: EXECVE_FAIL\n";
 	cerr << "Error happened during execve: " << strerror(errno) << endl;
 	exit(1);

@@ -191,8 +191,8 @@ void http_responce::write_responce()
       close(fd);
     }
     else {
-      add_header_field("Connection", "closed");
-      add_header_field("Content-length", 0);
+      // add_header_field("Connection", "closed");
+      add_header_field("Content-length", "0");
       write_head();
     }
     delete[] buf;
@@ -280,6 +280,6 @@ void http_responce::handle_cgi()
     set_status(200);
   }
   body.assign(raw.begin() + msg_body_position(), raw.end());  
-  print();
+  // print();
   write_responce();
 }

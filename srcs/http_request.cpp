@@ -44,7 +44,7 @@ void http_request::recieve()
   // else if (raw.find("\r\n\r\n") + 2 != raw.length()) {
   //   //error here
   // }
-  print();
+  // print();
 }
 
 void http_request::print() const
