@@ -82,7 +82,7 @@ void http_responce::write_responce()
     //Is used by default error pages and such
     int ret;
     pollfd pfd;
-    add_header_field("Connection", "closed");
+    add_header_field("Connection", "close");
     if (body.size() != 0)
       add_header_field("Content-length", convert_to_string(body.size()));
     // out << http_version << " " << status_code << " " << reason_phrase << "\r\n";
@@ -118,7 +118,7 @@ void http_responce::write_responce()
     delete[] buf;
   }
   else {
-    add_header_field("Connection", "closed");
+    add_header_field("Connection", "close");
     //Just the static pages
     int fd = open(target_name.c_str(), O_RDONLY);
     //Add check, that target_name doesn't point on a directory!!!!!!!!!!
@@ -191,7 +191,6 @@ void http_responce::write_responce()
       close(fd);
     }
     else {
-      // add_header_field("Connection", "closed");
       add_header_field("Content-length", "0");
       write_head();
     }

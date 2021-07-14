@@ -53,7 +53,7 @@ void http_webserv::start()
 	  << inet_ntop(AF_INET,
 		       &(addr.sin_addr.s_addr), cbuf, address_size)
 	  << ":" << ntohs(addr.sin_port);
-	serv_log(s.str());	
+	serv_log(s.str());
 	corr.serve(ns, addr);
       }
     }
@@ -141,7 +141,7 @@ http_server parse_server(ifstream& file)
 
 void http_webserv::parse_config(string filename)
 {
-	ifstream file(filename);
+  ifstream file(filename.c_str());
 	string res;
 	if (!file.good())
 	{
