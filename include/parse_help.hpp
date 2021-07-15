@@ -11,5 +11,6 @@ int is_obstext(char c);
 int is_field_char(char c);
 void skip_ows(string &str);
 void str_to_lower(string &s);
+string get_conf_token(string &in);
 
 #endif

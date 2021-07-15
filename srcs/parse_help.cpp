@@ -115,3 +115,20 @@ void str_to_lower(string &s)
     s[i] = tolower(s[i]);
   }  
 }
+
+
+string get_conf_token(string &str)
+{
+	skip_ows(str);
+	size_t pos = 0;
+	if (pos == str.length())
+		return "";
+	while (!isspace(str[pos]) && pos < str.length())
+		pos++;
+	if (pos == 0) {
+		return "";
+	}
+	string ret = str.substr(0, pos);
+	str.erase(0, pos);
+	return ret;
+}

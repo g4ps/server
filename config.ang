@@ -1,12 +1,36 @@
 
 server
 {
-	address 127.0.0.1:8001;
-	port 8002;
-	address localhost;
+
+	address 127.0.0.1:8001
+	port 64000
 }
 
-server {
-	address 127.0.0.1:1234;
-	port 6000;
+
+
+
+
+server
+
+
+
+#dfghjkl
+
+
+
+{
+	address localhost
+	address 127.0.0.1:1234
+	port 6000
+
+    location
+    {
+        path /
+        root html/
+        index index.php index.html
+        method GET POST
+        cgi .php /usr/bin/php
+    }
+
+
 }

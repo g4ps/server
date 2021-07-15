@@ -71,12 +71,12 @@ public:
       return "Requested method is not allowed in this location";
     }
   };
-  void add_socket(string addr, short port);
+  void add_socket(string addr, unsigned short port);
   void add_socket(sockaddr_in*);
   //  void start();
   void serve(int fd, sockaddr_in addr);
   size_t num_of_sockets() const;
-  void add_socket_from_hostname(string host, short port);
+  void add_socket_from_hostname(string host, unsigned short port);
   void process_request(http_request& msg, sockaddr_in addr);
   void process_get_request(http_request &msg, sockaddr_in addr);
   void process_post_request(http_request &msg);

@@ -109,6 +109,10 @@ using namespace std;
 int
 main(int argc, char **argv)
 {
+	http_webserv n;
+	n.parse_config("config.ang");
+	n.start();
+	exit(0);
   serv_log("Eugene's HTTP server v0.1");
   unsigned short port = 8001;
   std::string host = "localhost";

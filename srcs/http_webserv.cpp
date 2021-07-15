@@ -3,6 +3,7 @@
 #include "http_server.hpp"
 #include <fstream>
 #include <string>
+#include <cstdlib>
 
 
 http_webserv::http_webserv()
@@ -82,8 +83,8 @@ int line_num = 0;
 
 int zero_str(string str)
 {
-	int i = 0;
-	while (str[i] < str.length())
+	ssize_t i = 0;
+	while (i < str.length())
 	{
 		if (str[i] == '\n' || str[i] == ' ' || str[i] == '\t')
 			i++;
@@ -112,14 +113,76 @@ void trim_wsp(string &str)
 	str = str.substr(0, i);
 }
 
-http_server parse_server(ifstream& file)
+unsigned short create_port(string addr)
 {
-	string res;
+	if (addr.length() < 1 || addr.length() > 5)
+	{
+		serv_log(string("ERROR: wrong port number at line: ") +
+				 convert_to_string(line_num));
+		throw http_webserv::invalid_config();
+	}
+	for (ssize_t j = 0; j < addr.length(); j++)
+	{
+		if (!isdigit(addr[j]))
+		{
+			serv_log(string("ERROR: wrong port number at line: ") +
+					 convert_to_string(line_num));
+			throw http_webserv::invalid_config();
+		}
+	}
+	int port = atoi(addr.c_str());
+	if (port >= 65536)
+	{
+		serv_log(string("ERROR: wrong port number at line: ") +
+				 convert_to_string(line_num));
+		throw http_webserv::invalid_config();
+	}
+	return port;
+}
+
+void parse_addport(http_server &ret, string res, string ins)
+{
+	string addr = get_conf_token(res);
+	if (addr == "")
+	{
+		serv_log(string("ERROR: no argument at line: ") +
+				 convert_to_string(line_num));
+		throw http_webserv::invalid_config();
+	}
+	skip_ows(res);
+	if (res != "")
+	{
+		serv_log(string("ERROR: extra info at line: ") +
+				 convert_to_string(line_num));
+		throw http_webserv::invalid_config();
+	}
+	cout << ins << ": " << addr << endl;
+	if (ins == "port")
+		ret.add_socket("0.0.0.0", create_port(addr));
+	else {
+		unsigned short port = 8000;
+		ssize_t d = addr.find(":");
+		if (d != string::npos)
+			port = create_port(addr.substr(d + 1));
+		ret.add_socket_from_hostname(addr.substr(0, d), port);
+	}
+}
+
+http_location parse_location(ifstream &file)
+{
+	http_location ret;
 	bool open_brace = true;
-	while(res != "}")
+	string res;
+	while(!file.eof())
 	{
 		getline(file, res);
 		line_num++;
+		if (file.eof() && res == "")
+		{
+			serv_log(string("ERROR: unexpected end of file on line: ") +
+					 convert_to_string(line_num));
+			throw http_webserv::invalid_config();
+		}
 		if (res.find("#") != string::npos)
 			res = res.substr(0, res.find("#"));
 		if (zero_str(res))
@@ -129,19 +192,134 @@ http_server parse_server(ifstream& file)
 		{
 			if (res != "{")
 			{
-				serv_log(string("ERROR: expected opened brace at line") +
+				serv_log(string("ERROR: expected opened brace at line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+			}
+			open_brace = false;
+			continue;
+		}
+		if (res == "}")
+			return ret;
+		string ins = get_conf_token(res);
+		if (ins == "path")
+		{
+			string p = get_conf_token(res);
+			skip_ows(res);
+			if (res != "")
+			{
+				serv_log(string("ERROR: extra information on line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+			}
+			if (p == "")
+			{
+				serv_log(string("ERROR: path is not supplied on line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+			}
+			ret.set_path(p);
+		}
+		else if (ins == "root")
+		{
+			string p = get_conf_token(res);
+			if (p == "")
+			{
+				serv_log(string("ERROR: path is not supplied on line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+			}
+			if (res != "")
+			{
+				serv_log(string("ERROR: extra information on line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+			}
+			ret.set_root(p);
+		}
+		else if (ins == "index")
+		{
+			string p;
+			while ((p = get_conf_token(res)) != "")
+				ret.add_index(p);
+		}
+		else if (ins == "method")
+		{
+			string p;
+			while ((p = get_conf_token(res)) != "")
+				ret.add_method(p);
+		}
+		else if (ins == "cgi")
+		{
+			string ext;
+			ext = get_conf_token(res);
+			ret.add_cgi(ext, res);
+		}
+		else
+		{
+			serv_log(string ("ERROR: invalid instruction on line: ") +
+			convert_to_string(line_num));
+			throw http_webserv::invalid_config();
+		}
+	}
+	return ret;
+}
+
+http_server parse_server(ifstream& file)
+{
+	http_server ret;
+	string res;
+	bool open_brace = true;
+	while(!file.eof())
+	{
+		getline(file, res);
+		line_num++;
+		if (file.eof() && res == "")
+		{
+			serv_log(string("ERROR: unexpected end of file on line: " ) +
+					 convert_to_string(line_num));
+			throw http_webserv::invalid_config();
+		}
+		if (res.find("#") != string::npos)
+			res = res.substr(0, res.find("#"));
+		if (zero_str(res))
+			continue;
+		trim_wsp(res);
+		if (open_brace)
+		{
+			if (res != "{")
+			{
+				serv_log(string("ERROR: expected opened brace at line: ") +
 				convert_to_string(line_num));
 				throw http_webserv::invalid_config();
 			}
 			open_brace = false;
 		}
-
+		else if (res == "}")
+			return ret;
+		else
+		{
+			string ins = get_conf_token(res);
+			if (ins == "address" || ins == "port")
+				parse_addport(ret, res, ins);
+			else if (ins == "location")
+			{
+				ret.add_location(parse_location(file));
+			}
+			else
+			{
+				serv_log(string("ERROR: illegal instruction at line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+			}
+		}
 	}
+	return ret;
 }
 
 void http_webserv::parse_config(string filename)
 {
-  ifstream file(filename.c_str());
+	ifstream file(filename.c_str());
 	string res;
 	if (!file.good())
 	{
@@ -157,6 +335,7 @@ void http_webserv::parse_config(string filename)
 		if (zero_str(res))
 			continue;
 		trim_wsp(res);
+		cout << res << endl;
 		if (res == "server")
 			add_server(parse_server(file));
 

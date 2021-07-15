@@ -33,7 +33,7 @@
 using namespace std;
 
 
-void http_server::add_socket(string saddr, short port)
+void http_server::add_socket(string saddr, unsigned short port)
 {
   stringstream s;
   s << "Initializing server on host " << saddr
@@ -88,9 +88,7 @@ void http_server::add_socket(sockaddr_in *addr)
   serv_log(ss.str());
 }
 
-#ifdef NOT_SHIT
-
-void http_server::add_socket_from_hostname(string host, short port)
+void http_server::add_socket_from_hostname(string host, unsigned short port)
 {
   stringstream ss;
   ss << "Initializing server on host " << host
@@ -104,7 +102,7 @@ void http_server::add_socket_from_hostname(string host, short port)
   struct addrinfo *tmp = NULL;
   int err = getaddrinfo(host.c_str(), NULL, &hints, &res);
   if (err != 0) {
-    serv_log(string("ERROR: getaddrinfo") + gai_strerror(err));
+    serv_log(string("ERROR: getaddrinfo ") + gai_strerror(err));
     throw init_error();
   }
   struct sockaddr_in *p = NULL;
@@ -126,7 +124,6 @@ void http_server::add_socket_from_hostname(string host, short port)
   delete ret;
 }
 
-#endif
 
 size_t http_server::num_of_sockets() const
 {
