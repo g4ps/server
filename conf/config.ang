@@ -1,0 +1,19 @@
+server
+{
+	address 127.0.0.1:8001
+}
+
+server
+{
+	address 127.0.0.1:1234
+	port 8000
+	port 64000
+	location
+	{
+	        path /
+	        root /home/eugene/nquiz
+	        index index.php index.html
+	        method GET POST
+        	cgi .php /usr/bin/php-cgi
+	}
+}

@@ -156,7 +156,6 @@ void parse_addport(http_server &ret, string res, string ins)
 				 convert_to_string(line_num));
 		throw http_webserv::invalid_config();
 	}
-	cout << ins << ": " << addr << endl;
 	if (ins == "port")
 		ret.add_socket("0.0.0.0", create_port(addr));
 	else {
@@ -170,6 +169,7 @@ void parse_addport(http_server &ret, string res, string ins)
 
 http_location parse_location(ifstream &file)
 {
+  serv_log("Addling location");
 	http_location ret;
 	bool open_brace = true;
 	string res;
@@ -203,7 +203,7 @@ http_location parse_location(ifstream &file)
 			return ret;
 		string ins = get_conf_token(res);
 		if (ins == "path")
-		{
+		{		  
 			string p = get_conf_token(res);
 			skip_ows(res);
 			if (res != "")
@@ -219,6 +219,7 @@ http_location parse_location(ifstream &file)
 				throw http_webserv::invalid_config();
 			}
 			ret.set_path(p);
+			serv_log("Location path: " + p);
 		}
 		else if (ins == "root")
 		{
@@ -236,24 +237,34 @@ http_location parse_location(ifstream &file)
 				throw http_webserv::invalid_config();
 			}
 			ret.set_root(p);
+			serv_log("Location root: " + p);
 		}
 		else if (ins == "index")
 		{
+		  string out;
 			string p;
-			while ((p = get_conf_token(res)) != "")
-				ret.add_index(p);
+			while ((p = get_conf_token(res)) != "") {
+			  out += string(" ") + p;
+			  ret.add_index(p);
+			}
+			serv_log(string("Indexing files:") + out);
 		}
 		else if (ins == "method")
 		{
+		  string out;
 			string p;
-			while ((p = get_conf_token(res)) != "")
-				ret.add_method(p);
+			while ((p = get_conf_token(res)) != "") {
+			  res += string(" ") + out;
+			  ret.add_method(p);
+			}
+			serv_log(string("Allowed methods:") + out);
 		}
 		else if (ins == "cgi")
 		{
 			string ext;
 			ext = get_conf_token(res);
 			ret.add_cgi(ext, res);
+			serv_log(string("Processing extention ") + ext + " with " + res);
 		}
 		else
 		{
@@ -267,6 +278,7 @@ http_location parse_location(ifstream &file)
 
 http_server parse_server(ifstream& file)
 {
+  serv_log("Adding new server");
 	http_server ret;
 	string res;
 	bool open_brace = true;
@@ -335,7 +347,6 @@ void http_webserv::parse_config(string filename)
 		if (zero_str(res))
 			continue;
 		trim_wsp(res);
-		cout << res << endl;
 		if (res == "server")
 			add_server(parse_server(file));
 
