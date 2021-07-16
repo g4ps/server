@@ -2,6 +2,7 @@ server
 {
 	port 64000
 	port 8000
+	port 80
 	location
 	{
 	        path /

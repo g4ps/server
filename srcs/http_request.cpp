@@ -38,9 +38,10 @@ void http_request::recieve()
   parse_head();
   if (get_header_value("Content-Length").first ||
       get_header_value("Transfer-Encoding").first) {
-    serv_log("Requset has a body; Parsing it...");
+    // serv_log("Requset has a body; Parsing it...");
     get_msg_body();
   }
+  serv_log("Request was parsed successfully");
   // else if (raw.find("\r\n\r\n") + 2 != raw.length()) {
   //   //error here
   // }
@@ -161,7 +162,6 @@ void http_request::parse_head()
   size_t tpos = inp.find(crlf);
   parse_start_line(inp);
   parse_header_fields(inp);
-  serv_log("Header parsing was successfull");
 }
 
 void http_request::get_header()
@@ -169,7 +169,9 @@ void http_request::get_header()
   string head_end = "\r\n\r\n";
   ssize_t n;
   while (search(raw.begin(), raw.end(), head_end.begin(), head_end.end()) == raw.end()) {
-    read_block();
+    if (read_block() == 0) {
+      return ;
+    }
   }
 }
 
