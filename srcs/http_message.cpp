@@ -200,10 +200,10 @@ int http_message::get_socket()
   return sock_fd;
 }
 
-pair<bool, string> http_message::get_header_value(string name)
+pair<bool, string> http_message::get_header_value(string name) const
 {
   str_to_lower(name);
-  map<string, string>::iterator it;
+  map<string, string>::const_iterator it;
   it = header_lines.find(name);
   if (it == header_lines.end())
     return pair<bool, string>(false, "");

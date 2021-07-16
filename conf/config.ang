@@ -1,13 +1,7 @@
 server
 {
-	address 127.0.0.1:8001
-}
-
-server
-{
-	address 127.0.0.1:1234
-	port 8000
 	port 64000
+	port 8000
 	location
 	{
 	        path /

@@ -67,6 +67,7 @@ public:
   string get_http_version() const;
   string get_request_path() const;
   string get_request_query() const;
+  int keep_alive() const;
 };
 
 #endif

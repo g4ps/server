@@ -64,7 +64,7 @@ public:
   void add_header_field(string name, string val);
   string compose_header_fields();
   //maybe i should rename it
-  pair<bool, string> get_header_value(string name);
+  pair<bool, string> get_header_value(string name) const;
   size_t get_body_size() const;
   void print_body_into_fd(int fd);
   void set_server(http_server *s);

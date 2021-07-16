@@ -37,6 +37,7 @@ private:
   string name;
   deque<int> sock_fds;
   list<http_location> locations;
+  deque<int> active_fds;
 private:
   //private methods
   void check_location_for_correctness(http_location);
@@ -74,7 +75,7 @@ public:
   void add_socket(string addr, unsigned short port);
   void add_socket(sockaddr_in*);
   //  void start();
-  void serve(int fd, sockaddr_in addr);
+  int serve(int fd, sockaddr_in addr);
   size_t num_of_sockets() const;
   void add_socket_from_hostname(string host, unsigned short port);
   void process_request(http_request& msg, sockaddr_in addr);
@@ -86,7 +87,7 @@ public:
   // void send_status_code(http_request&, int code);
   // void send_timeout(int fd);
   bool has_socket(int fd);
-  deque<int>& get_sockets();
+  deque<int> get_sockets() const;
   string get_header_string(int fd);
   void process_error(http_request &fd, int status);
   void process_error(int fd, int status);

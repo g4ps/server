@@ -216,3 +216,17 @@ string http_request::get_request_query() const
 {
   return query;
 }
+
+int http_request::keep_alive() const
+{
+  pair<bool, string> r  = get_header_value("Connection");
+  if (!r.first)
+    return 0;
+  if (r.second == "close")
+    return 0;
+  if (get_http_version() == "HTTP/1.1")
+    return 1;
+  if (r.second == "keep-alive" && get_http_version() == "HTTP/1.0")
+    return 1;
+  return 0;
+}

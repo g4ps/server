@@ -130,30 +130,34 @@ size_t http_server::num_of_sockets() const
   return sock_fds.size();
 }
 
-void http_server::serve(int fd, sockaddr_in addr)
+int http_server::serve(int fd, sockaddr_in addr)
 {
   //get time;
+  http_request req;
   try {
-    http_request req(fd);
+    req.set_socket(fd);
+    req.recieve();
     process_request(req, addr);
   }
   catch (method_not_allowed &e) {
     serv_log("ERROR: Method is not allowed");
     process_error(fd, 405);
+    return 0;
   }
   catch (http_request::invalid_head &e) {
     serv_log("ERROR: Invalid header form");
     process_error(fd, 400);
+    return 0;
     // cout<<"ERROR: "<<e.what()<<endl;
   }
   catch (exception &e) {
     serv_log(string("ERROR: Internal server error: ") + e.what());
     process_error(fd, 500);
+    return 0;
   }
-  close(fd);
-  stringstream s;
-  s << "Connection closed on socket (" << fd << ")";
-  serv_log(s.str());
+  if (req.keep_alive())
+    active_fds.push_back(fd);
+  return 0;
 }
 
 void http_server::process_request(http_request& msg, sockaddr_in addr)
@@ -472,12 +476,19 @@ bool http_server::has_socket(int fd)
     if (*it == fd)
       return true;
   }
+  for (it = active_fds.begin(); it != active_fds.end(); it++) {
+    if (*it == fd)
+      return true;
+  }
   return false;
 }
 
-deque<int>& http_server::get_sockets()
+deque<int> http_server::get_sockets() const
 {
-  return sock_fds;
+  deque<int> ret;
+  ret.insert(ret.begin(), sock_fds.begin(), sock_fds.end());
+  ret.insert(ret.begin(), active_fds.begin(), active_fds.end());
+  return ret;
 }
 
 bool http_server::is_cgi_request(string target_name)

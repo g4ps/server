@@ -12,10 +12,10 @@ http_webserv::http_webserv()
 
 void http_webserv::start()
 {
-  vector<int> sockets;
+  deque<int> sockets;
   list<http_server>::iterator it;
   for (it = servers.begin(); it != servers.end(); it++) {
-    deque<int> &temp = it->get_sockets();
+    deque<int> temp = it->get_sockets();
     sockets.insert(sockets.begin(), temp.begin(), temp.end());
   }
   pollfd *fdarr = new pollfd[sockets.size()];
@@ -55,7 +55,15 @@ void http_webserv::start()
 		       &(addr.sin_addr.s_addr), cbuf, address_size)
 	  << ":" << ntohs(addr.sin_port);
 	serv_log(s.str());
-	corr.serve(ns, addr);
+	if (corr.serve(ns, addr) > 0);
+	  // sockets.push_back(ns);
+	// else {
+	  
+	// }
+	// close(ns);
+	stringstream s1;
+	s1 << "Connection closed on socket (" << ns << ")";
+	serv_log(s1.str());
       }
     }
   }
