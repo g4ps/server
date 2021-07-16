@@ -155,8 +155,11 @@ int http_server::serve(int fd, sockaddr_in addr)
     process_error(fd, 500);
     return 0;
   }
+  stringstream s;
+  s << "Successfully processed request from fd (" << fd << ")";
+  serv_log(s.str());
   if (req.keep_alive())
-    active_fds.push_back(fd);
+    return 1;
   return 0;
 }
 
@@ -190,6 +193,7 @@ void http_server::process_get_request(http_request& req, sockaddr_in addr)
     serv_log(string("Path of location: '") + r.get_path() + "'");
     serv_log(string("Requested file: '") + file_name + "'");
     http_responce resp(200);
+    resp.add_header_field("Connection", "keep-alive");
     resp.set_target_name(file_name);
     resp.set_socket(req.get_socket());
     resp.write_responce();
@@ -332,6 +336,7 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       }
       close(fd1[1]);
       http_responce resp;
+      resp.add_header_field("Connection", "keep-alive");
       resp.set_socket(req.get_socket());
       resp.set_cgi_fd(fd2[0]);
       resp.handle_cgi();
@@ -415,6 +420,7 @@ void http_server::process_error(int in, int status)
   catch(exception &e) {
     serv_log("Something went wrong with writing error page");
   }
+  serv_log("Processed error successfully");
 }
 
 string http_server::get_default_err_page(int status)
@@ -542,4 +548,29 @@ void http_server::add_location(http_location in)
   locations.push_back(in);
 }
 
+bool http_server::is_active_connection(int fd) const
+{
+  for (ssize_t i = 0; i < active_fds.size(); i++) {
+    if (fd == active_fds[i])
+      return true;
+  }
+  return false;
+}
 
+void http_server::add_active_connection(int fd)
+{
+  active_fds.push_back(fd);
+}
+
+void http_server::remove_active_connection(int fd)
+{
+  close(fd);
+  deque<int>::iterator it;  
+  for (it = active_fds.begin(); it !=  active_fds.end(); it++) {
+    if (fd == *it) {      
+      active_fds.erase(it);
+      return ;
+    }
+  }
+
+}

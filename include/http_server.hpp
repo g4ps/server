@@ -99,6 +99,9 @@ public:
   void add_location(http_location in);
   void process_redirect(http_request &in, int status, string target);
   const char** compose_cgi_envp(http_request& req, sockaddr_in addr);
+  bool is_active_connection(int fd) const;
+  void add_active_connection(int fd);
+  void remove_active_connection(int fd);
 };
 
 string test_page();

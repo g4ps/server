@@ -232,9 +232,8 @@ ssize_t http_message::read_block(size_t size, int fd)
   pollfd fdarr;
   fdarr.fd = fd;
   fdarr.events = 0;
-  fdarr.events |= POLLIN;
+  fdarr.events |= POLLRDNORM;
   if ((ret = poll(&fdarr, 1, 5000)) <= 0) {
-    close(fd);
     if (ret == 0) {
       throw req_timeout();
     }
@@ -245,7 +244,7 @@ ssize_t http_message::read_block(size_t size, int fd)
     close(fd);
     throw invalid_state();
   }
-  else if (!(fdarr.revents & POLLIN)) {
+  else if (!(fdarr.revents & POLLRDNORM)) {
     serv_log(string("poll ERROR: ") + strerror(errno));
     close(fd);
     throw invalid_state();
