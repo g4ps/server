@@ -72,7 +72,7 @@ void http_webserv::start()
 			 &(addr.sin_addr.s_addr), cbuf, address_size)
 	    << ":" << ntohs(addr.sin_port);
 	  serv_log(s.str());
-	  corr.add_active_connection(ns);
+	  // corr.add_active_connection(ns);
 	}
 	else
 	  ns = fdarr[i].fd;
@@ -82,9 +82,9 @@ void http_webserv::start()
 	serv_log("----------------------------------------");
       }
       else if (fdarr[i].revents & POLLNVAL) {
-	serv_log(string("ERROR: incottect fd ") + convert_to_string(fdarr[i].fd));
-	http_server& corr = find_server_with_socket(fdarr[i].fd);
-	corr.remove_active_connection(fdarr[i].fd);
+	// serv_log(string("ERROR: incottect fd ") + convert_to_string(fdarr[i].fd));
+	// http_server& corr = find_server_with_socket(fdarr[i].fd);
+	// corr.remove_active_connection(fdarr[i].fd);
       }
 
     }

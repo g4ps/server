@@ -32,6 +32,10 @@
 
 using namespace std;
 
+http_server::http_server()
+{
+  keep_alive = false;
+}
 
 void http_server::add_socket(string saddr, unsigned short port)
 {
@@ -193,7 +197,7 @@ void http_server::process_get_request(http_request& req, sockaddr_in addr)
     serv_log(string("Path of location: '") + r.get_path() + "'");
     serv_log(string("Requested file: '") + file_name + "'");
     http_responce resp(200);
-    resp.add_header_field("Connection", "keep-alive");
+    add_default_headers(resp);
     resp.set_target_name(file_name);
     resp.set_socket(req.get_socket());
     resp.write_responce();
@@ -336,7 +340,8 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       }
       close(fd1[1]);
       http_responce resp;
-      resp.add_header_field("Connection", "keep-alive");
+      // resp.add_header_field("Connection", "keep-alive");
+      add_default_headers(resp);
       resp.set_socket(req.get_socket());
       resp.set_cgi_fd(fd2[0]);
       resp.handle_cgi();
@@ -573,4 +578,14 @@ void http_server::remove_active_connection(int fd)
     }
   }
 
+}
+
+void http_server::add_default_headers(http_responce &resp)
+{
+  resp.add_header_field("Server", "BSE v0.9 by IT GODS");
+  if (keep_alive)
+    resp.add_header_field("Connection", "keep-alive");
+  else
+    resp.add_header_field("Connection", "close");
+  
 }

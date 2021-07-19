@@ -26,6 +26,7 @@
 #include "parse_help.hpp"
 #include "http_message.hpp"
 #include "http_request.hpp"
+#include "http_responce.hpp"
 #include "http_location.hpp"
 #include "http_utils.hpp"
 
@@ -35,6 +36,7 @@ class http_server
 {
 private:
   string name;
+  bool keep_alive;
   deque<int> sock_fds;
   list<http_location> locations;
   deque<int> active_fds;
@@ -72,6 +74,7 @@ public:
       return "Requested method is not allowed in this location";
     }
   };
+  http_server();
   void add_socket(string addr, unsigned short port);
   void add_socket(sockaddr_in*);
   //  void start();
@@ -102,6 +105,7 @@ public:
   bool is_active_connection(int fd) const;
   void add_active_connection(int fd);
   void remove_active_connection(int fd);
+  void add_default_headers(http_responce &resp);
 };
 
 string test_page();

@@ -252,17 +252,10 @@ ssize_t http_message::read_block(size_t size, int fd)
   n = read(fd, buf, BUFSIZ);
   if (n < 0) {
     serv_log("Read error: ");
-#ifdef NOT_SHIT
     serv_log(strerror(errno));
-#endif
     close(fd);
     throw invalid_state();
   }
-  // if (memchr(buf, '\0', n) != NULL) {
-  //   serv_log("Got \\0 in header");
-  //   close(fd);
-  //   throw invalid_state();
-  // }
   raw.insert(raw.end(), buf, buf + n);
   return n;
 }
