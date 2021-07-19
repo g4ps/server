@@ -17,6 +17,7 @@ using namespace std;
 
 http_message::http_message()
 {
+  is_active = false;
 }
 
 
@@ -233,21 +234,23 @@ ssize_t http_message::read_block(size_t size, int fd)
   fdarr.fd = fd;
   fdarr.events = 0;
   fdarr.events |= POLLRDNORM;
-  if ((ret = poll(&fdarr, 1, 5000)) <= 0) {
-    if (ret == 0) {
-      throw req_timeout();
+  if (!is_active) {
+    if ((ret = poll(&fdarr, 1, 5000)) <= 0) {
+      if (ret == 0) {
+	throw req_timeout();
+      }
+      throw invalid_state();
     }
-    throw invalid_state();
-  }
-  if (fdarr.revents & POLLERR) {
-    serv_log(string("poll ERROR: ") + strerror(errno));
-    close(fd);
-    throw invalid_state();
-  }
-  else if (!(fdarr.revents & POLLRDNORM)) {
-    serv_log(string("poll ERROR: ") + strerror(errno));
-    close(fd);
-    throw invalid_state();
+    if (fdarr.revents & POLLERR) {
+      serv_log(string("poll ERROR: ") + strerror(errno));
+      close(fd);
+      throw invalid_state();
+    }
+    else if (!(fdarr.revents & POLLRDNORM)) {
+      serv_log(string("poll ERROR: ") + strerror(errno));
+      close(fd);
+      throw invalid_state();
+    }
   }
   n = read(fd, buf, BUFSIZ);
   if (n < 0) {
@@ -271,14 +274,16 @@ ssize_t http_message::read_nb_block(size_t size, int fd)
   fdarr.fd = fd;
   fdarr.events = 0;
   fdarr.events |= POLLIN;
-  if (poll(&fdarr, 1, 5000) <= 0) {
-    close(fd);
-    throw invalid_state();
-  }
-  if (fdarr.revents & POLLERR) {
-    serv_log(string("poll ERROR: ") + strerror(errno));
-    close(fd);
-    throw invalid_state();
+  if (!is_active) {
+    if (poll(&fdarr, 1, 5000) <= 0) {
+      close(fd);
+      throw invalid_state();
+    }
+    if (fdarr.revents & POLLERR) {
+      serv_log(string("poll ERROR: ") + strerror(errno));
+      close(fd);
+      throw invalid_state();
+    }
   }
   // else if (!(fdarr.revents & POLLIN)) {
   //   serv_log(string("poll ERROR: ") + strerror(errno));
@@ -337,4 +342,9 @@ void http_message::print_raw()
   cout << "----------------------------------------\n";
   cout << "Raw input: " << pr ;
   cout << "----------------------------------------\n";
+}
+
+void http_message::set_active()
+{
+  is_active = true;
 }

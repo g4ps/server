@@ -279,6 +279,6 @@ void http_responce::handle_cgi()
     set_status(200);
   }
   body.assign(raw.begin() + msg_body_position(), raw.end());  
-  print();
+  // print();
   write_responce();
 }

@@ -138,6 +138,8 @@ int http_server::serve(int fd, sockaddr_in addr)
 {
   http_request req;
   try {
+    if (is_active_connection(fd))
+      req.set_active();
     req.set_socket(fd);
     req.recieve();
     process_request(req, addr);
@@ -235,7 +237,7 @@ const char** http_server::compose_cgi_envp(http_request& req, sockaddr_in addr)
 		   + convert_to_string(req.get_body_size()));
   }
   args.push_back(string ("QUERY_STRING=") + req.get_request_query());
-  args.push_back("SERVER_SOFTWARE=Eugene_server 0.1");
+  args.push_back("SERVER_SOFTWARE=BSE v0.9 by IT GODS");
   args.push_back(string("REQUEST_METHOD=") + req.get_method());
   args.push_back("SERVER_PROTOCOL=HTTP/1.1");
   //TODO: add adequate path info handler
@@ -327,7 +329,7 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       resp.set_socket(req.get_socket());
       resp.set_cgi_fd(fd2[0]);
       resp.handle_cgi();
-      resp.print();
+      // resp.print();
     }
     catch(exception &e) {
       close(fd1[1]);

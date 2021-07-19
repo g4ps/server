@@ -17,6 +17,7 @@ class http_server;
 class http_message
 {
 protected:
+  bool is_active;
   http_server *serv;
   vector<char> raw;
   string start_line;
@@ -70,6 +71,7 @@ public:
   void set_server(http_server *s);
   list<string> get_cgi_header_values();
   void print_raw();
+  void set_active();
 };
 
 #endif
