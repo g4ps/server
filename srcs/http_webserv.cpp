@@ -6,20 +6,6 @@
 #include <cstdlib>
 #include <pthread.h>
 
-struct mt_serv
-{
-  http_server *s1;
-  sockaddr_in addr;
-  int fd;
-};
-
-void* process_server(void *arg)
-{
-  mt_serv *s = (mt_serv*)arg;
-  (s->s1)->serve(s->fd, s->addr);
-  return NULL;
-}
-
 
 http_webserv::http_webserv()
 {
@@ -87,13 +73,17 @@ void http_webserv::start()
 			 &(addr.sin_addr.s_addr), cbuf, address_size)
 	    << ":" << ntohs(addr.sin_port);
 	  serv_log(s.str());
+	  corr.add_active_connection(ns);
 	}
 	else
 	  ns = fdarr[i].fd;	
 	int keep_alive = corr.serve(ns, addr);
+	// while (keep_alive > 0) {
+	//   int keep_alive = corr.serve(ns, addr);
+	// }
 	if (keep_alive <= 0)
 	  corr.remove_active_connection(ns);
-	close(ns);
+	// close(ns);
 	serv_log("----------------------------------------");
       }
       else if (fdarr[i].revents & POLLNVAL) {

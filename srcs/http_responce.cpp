@@ -83,7 +83,7 @@ void http_responce::write_responce()
     int ret;
     pollfd pfd;
     // add_header_field("Connection", "close");
-    if (body.size() != 0)
+    // if (body.size() != 0)
       add_header_field("Content-length", convert_to_string(body.size()));
     // out << http_version << " " << status_code << " " << reason_phrase << "\r\n";
     // out << compose_header_fields();
@@ -279,6 +279,6 @@ void http_responce::handle_cgi()
     set_status(200);
   }
   body.assign(raw.begin() + msg_body_position(), raw.end());  
-  // print();
+  print();
   write_responce();
 }

@@ -328,3 +328,13 @@ http_message::get_cgi_header_values()
   }
   return ret;
 }
+
+
+void http_message::print_raw()
+{
+  string pr;
+  pr.insert(pr.begin(), raw.begin(), raw.end());
+  cout << "----------------------------------------\n";
+  cout << "Raw input: " << pr ;
+  cout << "----------------------------------------\n";
+}

@@ -69,6 +69,7 @@ public:
   void print_body_into_fd(int fd);
   void set_server(http_server *s);
   list<string> get_cgi_header_values();
+  void print_raw();
 };
 
 #endif

@@ -35,6 +35,7 @@ void http_request::recieve()
   if (!is_fd_valid())
     throw invalid_function_call();
   get_header();
+  print_raw();
   parse_head();
   if (get_header_value("Content-Length").first ||
       get_header_value("Transfer-Encoding").first) {

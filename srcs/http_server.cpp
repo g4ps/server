@@ -34,7 +34,7 @@ using namespace std;
 
 http_server::http_server()
 {
-  keep_alive = false;
+  keep_alive = true;
 }
 
 void http_server::add_socket(string saddr, unsigned short port)
@@ -327,6 +327,7 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       resp.set_socket(req.get_socket());
       resp.set_cgi_fd(fd2[0]);
       resp.handle_cgi();
+      resp.print();
     }
     catch(exception &e) {
       close(fd1[1]);
@@ -358,8 +359,10 @@ void http_server::process_redirect(http_request &in, int status, string target)
 	   + "' to '" + target + "'");
   try {
     http_responce resp(status);
+    add_default_headers(resp);
     resp.set_socket(in.get_socket());
     resp.add_header_field("Location", target);
+    // resp.add_header_field("Content-length", "0");
     resp.write_responce();
   }
   catch (exception &e) {
@@ -532,6 +535,7 @@ void http_server::add_active_connection(int fd)
 
 void http_server::remove_active_connection(int fd)
 {
+  shutdown(fd, SHUT_RDWR);
   close(fd);
   deque<int>::iterator it;  
   for (it = active_fds.begin(); it !=  active_fds.end(); it++) {
@@ -546,9 +550,9 @@ void http_server::remove_active_connection(int fd)
 void http_server::add_default_headers(http_responce &resp)
 {
   resp.add_header_field("Server", "BSE v0.9 by IT GODS");
-  if (keep_alive)
+  // if (keep_alive)
     resp.add_header_field("Connection", "keep-alive");
-  else
-    resp.add_header_field("Connection", "close");
+  // else
+  //   resp.add_header_field("Connection", "close");
   
 }
