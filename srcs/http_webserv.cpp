@@ -4,6 +4,21 @@
 #include <fstream>
 #include <string>
 #include <cstdlib>
+#include <pthread.h>
+
+struct mt_serv
+{
+  http_server *s1;
+  sockaddr_in addr;
+  int fd;
+};
+
+void* process_server(void *arg)
+{
+  mt_serv *s = (mt_serv*)arg;
+  (s->s1)->serve(s->fd, s->addr);
+  return NULL;
+}
 
 
 http_webserv::http_webserv()
@@ -76,6 +91,12 @@ void http_webserv::start()
 	}
 	else
 	  ns = fdarr[i].fd;
+	mt_serv ser;
+	ser.s1 = &corr;
+	ser.addr = addr;
+	ser.fd = ns;
+	pthread_t tid;
+	pthread_create(&tid, NULL, &process_server, &ser);
 	int keep_alive = corr.serve(ns, addr);
 	if (keep_alive <= 0)
 	  corr.remove_active_connection(ns);

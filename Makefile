@@ -12,7 +12,7 @@ SRCS := $(SRCS:%=$(SRCS_DIR)%)
 OBJS := $(SRCS:.cpp=.o)
 
 #CPPFLAGS += -Wall -Werror -Wextra
-CPPFLAGS += -g -std=c++98
+CPPFLAGS += -g -std=c++98 -pthread
 
 #includes
 CPPFLAGS += -I. -I$(HEAD_DIR)
