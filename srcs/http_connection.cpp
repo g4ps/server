@@ -42,6 +42,11 @@ http_connection::http_connection(int in)
   set_fd(in);
 }
 
+http_connection::~http_connection()
+{
+  close(fd);
+}
+
 void http_connection::set_fd(int in)
 {
   fd = in;
@@ -52,22 +57,23 @@ int http_connection::get_fd() const
   return fd;
 }
 
-// void http_connection::add_buffer()
-// {
-//   char *buf = new char[BUFSIZ];
-//   int ret = read(fd, buf, BUFSIZ);
-//   if (ret < 0) {
-//     serv_log(string("read error on socket ") + convert_to_string(fd));
-//     throw read_error();
-//   }
-//   if (ret == 0)
-//     return ;
-//   read_buffer.insert(read_buffer.end(), buf, buf + ret);  
-// }
+void http_connection::expand_read_buffer()
+{
+  char *buf = new char[BUFSIZ];
+  int ret = read(fd, buf, BUFSIZ);
+  if (ret < 0) {
+    serv_log(string("read error on socket ") + convert_to_string(fd));
+    throw read_error();
+  }
+  if (ret == 0)
+    return ;
+  read_buffer.insert(read_buffer.end(), buf, buf + ret);  
+}
 
-// bool http_connection::has_full_header() const
-// {
-//   if (
-// }
+bool http_connection::has_full_header() const
+{
+  string head_end = "\r\n\r\n";
+  ssize_t n;
+  return search(raw.begin(), raw.end(), head_end.begin(), head_end.end()) != raw.end()
+}
 
-// void http_connection::process_header

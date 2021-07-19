@@ -136,7 +136,6 @@ size_t http_server::num_of_sockets() const
 
 int http_server::serve(int fd, sockaddr_in addr)
 {
-  //get time;
   http_request req;
   try {
     req.set_socket(fd);
@@ -152,7 +151,6 @@ int http_server::serve(int fd, sockaddr_in addr)
     serv_log("ERROR: Invalid header form");
     process_error(fd, 400);
     return 0;
-    // cout<<"ERROR: "<<e.what()<<endl;
   }
   catch (exception &e) {
     serv_log(string("ERROR: Internal server error: ") + e.what());
@@ -294,23 +292,8 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
     try {
       http_location &r = get_location_from_target(req.get_request_path());
       const char **vv = compose_cgi_envp(req, addr);
-      //make it a fucking path
       const char **k = make_argument_vector(r.cgi_path(req.get_request_path()));
-      // k[0] = strdup(r.cgi_path(req.get_request_path()).c_str());
-      // k[1] = NULL;
-      // k[1] = "-f";
-      // k[2] = "/home/eugene/school/server/html/test.php";
-      // k[3] = NULL;
       const char** arg;
-      // cerr << "Argv:\n";
-      // for (arg = k; *arg != NULL; arg++) {
-      // 	cerr << *arg << endl;
-      // }
-      // cerr << "Envp:\n";
-      // for (arg = vv; *arg != NULL; arg++) {
-      // 	cerr << *arg << endl;
-      // }
-      // const char *fn = strdup(r.cgi_path(req.get_request_path()).c_str());
       dup2(fd1[0], 0);
       dup2(fd2[1], 1);
       if (chdir(r.get_root().c_str()) < 0) {
@@ -340,7 +323,6 @@ void http_server::process_cgi(http_request& req, sockaddr_in addr)
       }
       close(fd1[1]);
       http_responce resp;
-      // resp.add_header_field("Connection", "keep-alive");
       add_default_headers(resp);
       resp.set_socket(req.get_socket());
       resp.set_cgi_fd(fd2[0]);
@@ -460,25 +442,6 @@ string http_server::get_error_target_name(string target)
 {
   return "";
 }
-
-//Should be removed
-
-// void http_server::process_not_found(http_request &req)
-// {
-//   http_responce resp(404);
-//   resp.set_socket(req.get_socket());
-//   resp.write_responce();
-// }
-
-// void http_server::send_status_code(http_request &req, int code)
-// {
-//   if (code == 404)
-//     process_not_found(req);
-// }
-
-// void http_server::send_timeout(int fd)
-// {
-// }
 
 bool http_server::has_socket(int fd)
 {
