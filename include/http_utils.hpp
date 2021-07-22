@@ -19,5 +19,6 @@ bool is_directory(string target);
 string str_to_upper(string req);
 bool does_exist(string s);
 void create_file(string filename, vector<char> &content);
+string uri_to_string(string s);
 
 #endif

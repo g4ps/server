@@ -19,4 +19,12 @@ server
 		method GET POST
 		cgi .php /usr/bin/php-cgi
 	}
+	location
+	{
+		path /upload
+		root html/upload/
+		method GET POST
+		upload on
+		upload_folder html/upload/
+	}
 }

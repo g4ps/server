@@ -41,6 +41,15 @@ void http_responce::set_status(int st)
   case 200:
     reason_phrase = "OK";
     break;
+  case 201:
+    reason_phrase = "Created";
+    break;
+  case 202:
+    reason_phrase = "Accepted";
+    break;
+  case 204:
+    reason_phrase = "No Content";
+    break;
   case 301:
     reason_phrase = "Moved Permanently";
     break;
@@ -49,6 +58,9 @@ void http_responce::set_status(int st)
     break;
   case 400:
     reason_phrase = "Bad Request";
+    break;
+  case 403:
+    reason_phrase = "Forbidden";
     break;
   case 404:
     reason_phrase = "Not Found";
@@ -245,8 +257,8 @@ void http_responce::print() const
     cout << i->first <<": " << i->second<< "\r\n";
   }
   string msg_body(body.begin(), body.end());
-  if (msg_body.length() != 0) 
-    cout<<msg_body<<std::endl;
+  // if (msg_body.length() != 0) 
+  //   cout<<msg_body<<std::endl;
 }
 
 

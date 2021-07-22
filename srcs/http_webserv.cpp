@@ -302,6 +302,36 @@ http_location parse_location(ifstream &file)
 			ret.add_cgi(ext, res);
 			serv_log(string("Processing extention ") + ext + " with " + res);
 		}
+		else if (ins == "upload_folder") {
+		  string f = get_conf_token(res);
+		  skip_ows(res);
+		  if (res != ""){
+		    serv_log(string("ERROR: extra information on line: ") +
+			     convert_to_string(line_num));
+		    throw http_webserv::invalid_config();
+		  }
+		  ret.set_upload_folder(f);
+		}
+		else if (ins == "upload") {
+		  string f = get_conf_token(res);
+		  skip_ows(res);
+		  if (res != ""){
+		    serv_log(string("ERROR: extra information on line: ") +
+			     convert_to_string(line_num));
+		    throw http_webserv::invalid_config();
+		  }
+		  if (f == "on") {
+		    ret.set_upload_accept(true);		    
+		  }
+		  else if (f == "off") {
+		    ret.set_upload_accept(false);		    
+		  }
+		  else {
+		    serv_log(string("ERROR: bad upload value at line: ") +
+			     convert_to_string(line_num));
+		    throw http_webserv::invalid_config();
+		  }
+		}
 		else
 		{
 			serv_log(string ("ERROR: invalid instruction on line: ") +

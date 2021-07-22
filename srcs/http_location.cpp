@@ -39,8 +39,8 @@ bool http_location::is_path(string s) const
 
 http_location::http_location()
 {
-  upload_folder = "html/upload/";
-  upload_accept = true;
+  // upload_folder = "html/upload/";
+  // upload_accept = true;
 }
 
 http_location::http_location(string s)
@@ -289,4 +289,20 @@ bool http_location::is_upload_accept() const
 string http_location::get_upload_folder() const
 {
   return upload_folder;
+}
+
+void http_location::set_upload_accept(bool s)
+{
+  upload_accept = s;  
+}
+
+void http_location::set_upload_folder(string s)
+{
+  if (!is_directory(s)) {
+    serv_log(string("Upload folder '") + s + "' was not found");
+    throw not_found();
+  }
+  if (s[s.length() - 1] != '/')
+    s += "/";
+  upload_folder = s;  
 }

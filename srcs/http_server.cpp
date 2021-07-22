@@ -184,6 +184,9 @@ void http_server::process_request(http_request& msg, sockaddr_in addr)
   else if (type == "POST") {
     process_post_request(msg);
   }
+  else if (type == "DELETE") {
+    process_delete_request(msg);
+  }
   else {    
     process_error(msg, 501);
   }
@@ -486,9 +489,23 @@ void http_server::process_post_request(http_request &req)
 {
   http_location &r = get_location_from_target(req.get_request_path());
   if (!r.is_upload_accept()) {
+    serv_log("Cannot upload on this path");
+    process_error(req.get_socket(), 403);
+  }
+  try {
+    process_file_upload(req);
+  }
+  catch(http_server::upload_error &e) {
+    serv_log("ERROR while uploading");
+    process_error(req.get_socket(), 400);
     return ;
   }
-  process_file_upload(req);
+  http_responce resp(204);
+  resp.set_socket(req.get_socket());
+  // resp.add_header_
+  // resp.set_body("Created");
+  add_default_headers(resp);
+  resp.write_responce();
 }
 
 http_location& http_server::get_location_from_target(string s)
@@ -578,24 +595,32 @@ void http_server::add_default_headers(http_responce &resp)
 
 void http_server::process_file_upload(http_request &req)
 {
+  serv_log("Processing file upload");
   //Checking, that everything is alright with header fields and
   //getting boundary
   http_location &r = get_location_from_target(req.get_request_path());
   pair<bool, string> content_type = req.get_header_value("content-type");
   if (!content_type.first) {
-    return ;
+    serv_log("Cannot process upload; No content-type field");
+    throw upload_error();
   }
   string ct = content_type.second;
-  if (ct.find(";") == string::npos)
-    return;
+  if (ct.find(";") == string::npos) {
+    serv_log(string("Cannot determine content type of the field"));
+    throw upload_error();
+  }
   string type = ct.substr(0, ct.find(";"));
-  if (type != "multipart/form-data")
-    return ;
+  if (type != "multipart/form-data") {
+    serv_log(string("Cannot process form type ") + type);
+    throw upload_error();
+  }
   string boundary = ct.substr(ct.find(";") + 1);
   skip_ows(boundary);
   ssize_t tp = boundary.find("boundary=");
-  if (tp != 0)
-    return ;
+  if (tp != 0) {
+    serv_log("Cannot process boundary");
+    throw upload_error();
+  }
   boundary = boundary.substr(string("boundary=").length());
 
   boundary = "--" + boundary;
@@ -604,8 +629,10 @@ void http_server::process_file_upload(http_request &req)
   string dcrlf = "\r\n\r\n";
   //start and finish of next boundary 
   vector<char>::iterator start = body.begin();
-  if (body.end() - start <= boundary.length())
-    return ;
+  if (body.end() - start <= boundary.length()) {
+    serv_log("Invalid body for upload");
+    throw upload_error();
+  }
   vector<char>::iterator finish = search(start + 1, body.end(),
 					 boundary.begin(), boundary.end());
   while(finish != body.end()) {
@@ -637,10 +664,27 @@ void http_server::process_file_upload(http_request &req)
     if (filename.length() == 0)
       continue;
     vector<char> cont(msg_start, finish - 2);
+    serv_log(string("Creating file '") + filename + "' at folder '"+
+	     r.get_upload_folder());
     create_file(r.get_upload_folder() + filename, cont);
     string kk(msg_start, finish - 2);
     start = finish;
     finish = search(start + 1, body.end(),
 		    boundary.begin(), boundary.end());
   }
+}
+
+void http_server::process_delete_request(http_request &req)
+{
+  http_location &r = get_location_from_target(req.get_request_path());
+  string file_name = r.get_file_name(req.get_request_path());
+  int ret;
+  ret = unlink(file_name.c_str());
+  if (ret < 0) {
+    throw invalid_target();
+  }
+  http_responce resp(204);
+  add_default_headers(resp);
+  resp.set_socket(req.get_socket());
+  resp.write_responce();
 }

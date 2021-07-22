@@ -130,3 +130,24 @@ void create_file(string name, vector<char> &content)
     content.erase(content.begin(), content.begin() + n);
   }
 }
+
+string uri_to_string(string t)
+{
+  size_t i = 0;
+  string ret;
+  while (i < t.length()) {
+    if (t[i] == '%') {
+      string dig;
+      dig += t[i + 1];
+      dig += t[i + 2];
+      char c = strtol(dig.c_str(), NULL, 16);
+      ret += c;
+      i += 3;
+    }
+    else {
+      ret += t[i];
+      i++;      
+    }
+  }
+  return ret;
+}

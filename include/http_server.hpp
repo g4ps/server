@@ -75,6 +75,12 @@ public:
       return "Requested method is not allowed in this location";
     }
   };
+  class upload_error: public exception {
+    const char* what() const throw()
+    {
+      return "Requested method is not allowed in this location";
+    }
+  };
   http_server();
   void add_socket(string addr, unsigned short port);
   void add_socket(sockaddr_in*);
@@ -109,6 +115,7 @@ public:
   void remove_active_connection(int fd);
   void add_default_headers(http_responce &resp);
   void process_file_upload(http_request &req);
+  void process_delete_request(http_request &req);
 };
 
 string test_page();
