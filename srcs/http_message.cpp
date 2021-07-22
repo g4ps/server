@@ -227,6 +227,7 @@ ssize_t http_message::read_block(size_t size, int fd)
   int ret;
   if (fd < 0)
     fd = sock_fd;
+  // size = 4096;
   char *buf = new char[size];
   bzero(buf, size);
   ssize_t n;
@@ -256,7 +257,7 @@ ssize_t http_message::read_block(size_t size, int fd)
     }
   }
   is_active = false;
-  n = read(fd, buf, BUFSIZ);
+  n = read(fd, buf, size);
   if (n < 0) {
     serv_log("Read error: ");
     serv_log(strerror(errno));
@@ -264,8 +265,8 @@ ssize_t http_message::read_block(size_t size, int fd)
     close(fd);
     throw invalid_state();
   }
-  delete [] buf;
   raw.insert(raw.end(), buf, buf + n);
+  delete [] buf;
   return n;
 }
 
@@ -353,4 +354,10 @@ void http_message::print_raw()
 void http_message::set_active()
 {
   is_active = true;
+}
+
+
+vector<char>& http_message::get_body()
+{
+  return body;
 }

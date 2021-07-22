@@ -99,3 +99,34 @@ string str_to_upper(string req)
   }
   return ret;
 }
+
+
+void create_file(string name, vector<char> &content)
+{
+  int fd = open(name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  char buf[BUFSIZ];
+  pollfd pfd;
+  while (content.size() != 0) {
+    pfd.fd = fd;
+    pfd.events = 0 | POLLOUT;
+    int ret = poll(&pfd, 1, 5000);
+    if (ret == 0) {
+      serv_log("ERROR: Timeout during writing file");
+      throw http_request::timeout_error();
+    }
+    else if (ret < 0) {
+      serv_log(string ("Poll ERROR: ") + strerror(errno));
+      throw http_server::internal_error();
+    }
+    if (pfd.revents & POLLERR) {
+      serv_log(string ("Poll ERROR: ") + strerror(errno));
+      throw http_server::internal_error();
+    }      
+    size_t n = content.size();
+    if (n > BUFSIZ)
+      n = BUFSIZ;
+    copy(content.begin(), content.begin() + n, buf);
+    write(fd, buf, n);
+    content.erase(content.begin(), content.begin() + n);
+  }
+}

@@ -484,11 +484,11 @@ bool http_server::is_cgi_request(string target_name)
 
 void http_server::process_post_request(http_request &req)
 {
-  // http_location &r = get_location_from_target(req.get_target_name());
-  // if (!r.is_upload_accept()) {
-  //   return ;
-  // }
-  // process_file_upload();
+  http_location &r = get_location_from_target(req.get_request_path());
+  if (!r.is_upload_accept()) {
+    return ;
+  }
+  process_file_upload(req);
 }
 
 http_location& http_server::get_location_from_target(string s)
@@ -576,8 +576,71 @@ void http_server::add_default_headers(http_responce &resp)
   
 }
 
-// void http_server::process_file_upload(http_request &req)
-// {
-//   string crlf = "/r/n";
-  
-// }
+void http_server::process_file_upload(http_request &req)
+{
+  //Checking, that everything is alright with header fields and
+  //getting boundary
+  http_location &r = get_location_from_target(req.get_request_path());
+  pair<bool, string> content_type = req.get_header_value("content-type");
+  if (!content_type.first) {
+    return ;
+  }
+  string ct = content_type.second;
+  if (ct.find(";") == string::npos)
+    return;
+  string type = ct.substr(0, ct.find(";"));
+  if (type != "multipart/form-data")
+    return ;
+  string boundary = ct.substr(ct.find(";") + 1);
+  skip_ows(boundary);
+  ssize_t tp = boundary.find("boundary=");
+  if (tp != 0)
+    return ;
+  boundary = boundary.substr(string("boundary=").length());
+
+  boundary = "--" + boundary;
+  vector<char> &body = req.get_body();
+  string crlf = "\r\n";
+  string dcrlf = "\r\n\r\n";
+  //start and finish of next boundary 
+  vector<char>::iterator start = body.begin();
+  if (body.end() - start <= boundary.length())
+    return ;
+  vector<char>::iterator finish = search(start + 1, body.end(),
+					 boundary.begin(), boundary.end());
+  while(finish != body.end()) {
+    vector<char>::iterator msg_start = search(start, finish, dcrlf.begin(),
+					      dcrlf.end());
+    msg_start += dcrlf.length();
+    string fields(start + boundary.length() + crlf.length(), msg_start);
+    string filename;
+    while (fields.length() != 0) {
+      string f = fields.substr(0, fields.find(crlf));
+      fields = fields.substr(fields.find(crlf) + crlf.length());
+      string name = f.substr(0, f.find(":"));
+      str_to_lower(name);
+      if (name  == "content-disposition") {
+	filename = f.substr(f.find("filename"));
+	if (filename.length() == 0)
+	  continue;
+	filename = filename.substr(filename.find("=") + 1);
+	if (filename[0] == '\"')
+	  filename = filename.substr(1, filename.find("\"", 1) - 1);
+	else {
+	  ssize_t i = 0;
+	  while (i < filename.length() && isalnum(filename[i]))
+	    i++;
+	  filename = filename.substr(0, i);
+	}
+      }
+    }
+    if (filename.length() == 0)
+      continue;
+    vector<char> cont(msg_start, finish - 2);
+    create_file(r.get_upload_folder() + filename, cont);
+    string kk(msg_start, finish - 2);
+    start = finish;
+    finish = search(start + 1, body.end(),
+		    boundary.begin(), boundary.end());
+  }
+}

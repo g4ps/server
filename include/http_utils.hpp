@@ -3,6 +3,7 @@
 
 
 #include <string>
+#include <vector>
 #include <list>
 #include <unistd.h>
 
@@ -17,5 +18,6 @@ const char ** make_argument_vector(list<string> s);
 bool is_directory(string target);
 string str_to_upper(string req);
 bool does_exist(string s);
+void create_file(string filename, vector<char> &content);
 
 #endif

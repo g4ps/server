@@ -72,6 +72,7 @@ public:
   list<string> get_cgi_header_values();
   void print_raw();
   void set_active();
+  vector<char>& get_body();
 };
 
 #endif

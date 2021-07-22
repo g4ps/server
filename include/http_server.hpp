@@ -108,6 +108,7 @@ public:
   http_connection get_active_connection(int fd);
   void remove_active_connection(int fd);
   void add_default_headers(http_responce &resp);
+  void process_file_upload(http_request &req);
 };
 
 string test_page();
