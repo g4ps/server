@@ -29,6 +29,7 @@
 #include "http_responce.hpp"
 #include "http_location.hpp"
 #include "http_utils.hpp"
+#include "http_connection.hpp"
 
 using namespace std;
 
@@ -39,7 +40,7 @@ private:
   bool keep_alive;
   deque<int> sock_fds;
   list<http_location> locations;
-  deque<int> active_fds;
+  list<http_connection> connections;
 private:
   //private methods
   void check_location_for_correctness(http_location);
@@ -89,7 +90,7 @@ public:
   // void process_not_found(http_request &req);
   // void send_status_code(http_request&, int code);
   // void send_timeout(int fd);
-  bool has_socket(int fd);
+  bool has_socket(int fd) const;
   deque<int> get_sockets() const;
   string get_header_string(int fd);
   void process_error(http_request &fd, int status);
@@ -103,7 +104,8 @@ public:
   void process_redirect(http_request &in, int status, string target);
   const char** compose_cgi_envp(http_request& req, sockaddr_in addr);
   bool is_active_connection(int fd) const;
-  void add_active_connection(int fd);
+  void add_active_connection(int fd, sockaddr_in addr);
+  http_connection get_active_connection(int fd);
   void remove_active_connection(int fd);
   void add_default_headers(http_responce &resp);
 };

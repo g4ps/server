@@ -448,15 +448,16 @@ string http_server::get_error_target_name(string target)
   return "";
 }
 
-bool http_server::has_socket(int fd)
+bool http_server::has_socket(int fd) const
 {
   deque<int>::const_iterator it;
   for (it = sock_fds.begin(); it != sock_fds.end(); it++) {
     if (*it == fd)
       return true;
   }
-  for (it = active_fds.begin(); it != active_fds.end(); it++) {
-    if (*it == fd)
+  list<http_connection>::const_iterator it1;
+  for (it1 = connections.begin(); it1 != connections.end(); it1++) {
+    if (it1->get_fd() == fd)
       return true;
   }
   return false;
@@ -466,7 +467,10 @@ deque<int> http_server::get_sockets() const
 {
   deque<int> ret;
   ret.insert(ret.begin(), sock_fds.begin(), sock_fds.end());
-  ret.insert(ret.begin(), active_fds.begin(), active_fds.end());
+  list<http_connection>::const_iterator it;
+  for (it = connections.begin(); it != connections.end(); it++) {
+    ret.push_back(it->get_fd());
+  }
   return ret;
 }
 
@@ -480,9 +484,11 @@ bool http_server::is_cgi_request(string target_name)
 
 void http_server::process_post_request(http_request &req)
 {
-  // if (is_cgi_request(req.get_request_target())) {
-  //   process_cgi(req);
+  // http_location &r = get_location_from_target(req.get_target_name());
+  // if (!r.is_upload_accept()) {
+  //   return ;
   // }
+  // process_file_upload();
 }
 
 http_location& http_server::get_location_from_target(string s)
@@ -523,30 +529,41 @@ void http_server::add_location(http_location in)
 
 bool http_server::is_active_connection(int fd) const
 {
-  for (ssize_t i = 0; i < active_fds.size(); i++) {
-    if (fd == active_fds[i])
+  list<http_connection>::const_iterator it;
+  for (it = connections.begin(); it != connections.end(); it++) {
+    if (fd == it->get_fd())
       return true;
   }
   return false;
 }
 
-void http_server::add_active_connection(int fd)
+void http_server::add_active_connection(int fd, sockaddr_in addr)
 {
-  active_fds.push_back(fd);
+  http_connection c(fd, addr);
+  connections.push_back(c);
+}
+
+http_connection http_server::get_active_connection(int fd)
+{
+  list<http_connection>::const_iterator it;
+  for (it = connections.begin(); it != connections.end(); it++) {
+    if (fd == it->get_fd())
+      return *it;
+  }
+  throw internal_error();
 }
 
 void http_server::remove_active_connection(int fd)
 {
   shutdown(fd, SHUT_RDWR);
   close(fd);
-  deque<int>::iterator it;  
-  for (it = active_fds.begin(); it !=  active_fds.end(); it++) {
-    if (fd == *it) {      
-      active_fds.erase(it);
+  list<http_connection>::iterator it;  
+  for (it = connections.begin(); it != connections.end(); it++) {
+    if (fd == it->get_fd()) {
+      connections.erase(it);
       return ;
     }
   }
-
 }
 
 void http_server::add_default_headers(http_responce &resp)
@@ -558,3 +575,9 @@ void http_server::add_default_headers(http_responce &resp)
   //   resp.add_header_field("Connection", "close");
   
 }
+
+// void http_server::process_file_upload(http_request &req)
+// {
+//   string crlf = "/r/n";
+  
+// }

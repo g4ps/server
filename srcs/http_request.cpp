@@ -35,7 +35,7 @@ void http_request::recieve()
   if (!is_fd_valid())
     throw invalid_function_call();
   get_header();
-  print_raw();
+  // print_raw();
   parse_head();
   if (get_header_value("Content-Length").first ||
       get_header_value("Transfer-Encoding").first) {
@@ -46,7 +46,7 @@ void http_request::recieve()
   // else if (raw.find("\r\n\r\n") + 2 != raw.length()) {
   //   //error here
   // }
-  // print();
+  print();
 }
 
 void http_request::print() const
@@ -63,8 +63,8 @@ void http_request::print() const
   }
   cout<<"\r\n";
   string msg_body(body.begin(), body.end());
-  // if (msg_body.length() != 0) 
-  //   cout<<msg_body<<std::endl;
+  if (msg_body.length() != 0) 
+    cout<<msg_body<<std::endl;
 }
 
 string http_request::get_method() const 
@@ -194,7 +194,6 @@ void http_request::get_msg_body()
 
   //Here we sould have the check for maximum body length
   if (get_header_value("Content-length").first) {
-    //TODO: Atoi should be replaced by something more appropriate
     //Also, add checks for normal symbols
     serv_log("Got header field 'Content-length'; therefore "
 	     "reading non-chuncked request");
@@ -205,9 +204,39 @@ void http_request::get_msg_body()
       left -= read_block(left);
     }
     body.assign(raw.begin() + msg_body_position(), raw.end());
-    
   }
-  //TODO add chuncked request
+  else {
+    string crlf = "\r\n";
+    ssize_t next_chunk_position = msg_body_position();
+    while (1) {
+      if (search(raw.begin() + next_chunk_position, raw.end(),
+		 crlf.begin(), crlf.end()) != raw.end()) {
+	//getting position of end of the chunk size length
+	ssize_t chunk_head_end = search(raw.begin() + next_chunk_position, raw.end(),
+					crlf.begin(), crlf.end()) - (raw.begin() + next_chunk_position);
+	//getting chunk size
+	string chunk_head;
+	chunk_head.insert(chunk_head.begin(), raw.begin() + next_chunk_position,
+			  raw.begin() + chunk_head_end + next_chunk_position);
+	if (chunk_head.length() == 0)
+	  throw invalid_state();
+	string str_chunk_size = chunk_head.substr(0, chunk_head.find(";"));
+	if (!is_hex_string(str_chunk_size))
+	  throw invalid_state();
+	long chunk_size = strtol(str_chunk_size.c_str(), NULL, 16);
+	if (chunk_size == 0)
+	  return ;
+	//getting the whole chunk
+	//2 is the size of crlf
+	while (raw.size() < next_chunk_position + chunk_head_end + 2 + chunk_size)
+	  read_block();
+	body.insert(body.end(), raw.begin() + next_chunk_position + chunk_head_end + 2,
+		    raw.begin() + next_chunk_position + chunk_head_end + 2 + chunk_size);
+	next_chunk_position = next_chunk_position + chunk_head_end + 2 + chunk_size + 2;
+    
+      }
+    }
+  }
 }
 
 string http_request::get_request_path() const

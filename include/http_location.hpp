@@ -95,6 +95,8 @@ public:
   bool is_cgi_request(string target) const;
   list<string> cgi_path(string target) const;
   string get_uri_full_path(string target) const;
+  bool is_upload_accept() const;
+  string get_upload_folder() const;
 };
 
 #endif

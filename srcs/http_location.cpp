@@ -39,6 +39,8 @@ bool http_location::is_path(string s) const
 
 http_location::http_location()
 {
+  upload_folder = "html/upload/";
+  upload_accept = true;
 }
 
 http_location::http_location(string s)
@@ -277,4 +279,14 @@ string http_location::get_uri_full_path(string t) const
   string target = get_file_name(t);
   target = target.substr(root.length() - 1);
   return target;
+}
+
+bool http_location::is_upload_accept() const
+{
+  return upload_accept;
+}
+
+string http_location::get_upload_folder() const
+{
+  return upload_folder;
 }

@@ -227,7 +227,7 @@ ssize_t http_message::read_block(size_t size, int fd)
   int ret;
   if (fd < 0)
     fd = sock_fd;
-  char buf[size];
+  char *buf = new char[size];
   bzero(buf, size);
   ssize_t n;
   pollfd fdarr;
@@ -236,6 +236,7 @@ ssize_t http_message::read_block(size_t size, int fd)
   fdarr.events |= POLLRDNORM;
   if (!is_active) {
     if ((ret = poll(&fdarr, 1, 5000)) <= 0) {
+      delete []  buf;
       if (ret == 0) {
 	throw req_timeout();
       }
@@ -244,21 +245,26 @@ ssize_t http_message::read_block(size_t size, int fd)
     if (fdarr.revents & POLLERR) {
       serv_log(string("poll ERROR: ") + strerror(errno));
       close(fd);
+      delete [] buf;
       throw invalid_state();
     }
     else if (!(fdarr.revents & POLLRDNORM)) {
       serv_log(string("poll ERROR: ") + strerror(errno));
       close(fd);
+      delete [] buf;
       throw invalid_state();
     }
   }
+  is_active = false;
   n = read(fd, buf, BUFSIZ);
   if (n < 0) {
     serv_log("Read error: ");
     serv_log(strerror(errno));
+    delete [] buf;
     close(fd);
     throw invalid_state();
   }
+  delete [] buf;
   raw.insert(raw.end(), buf, buf + n);
   return n;
 }
@@ -313,7 +319,7 @@ size_t http_message::msg_body_position() const
   it = search(raw.begin(), raw.end(),
 	      head_end.begin(), head_end.end());
   if (it == raw.end()) {
-    serv_log("ERROR: http_request;:msg_body_position was "
+    serv_log("ERROR: http_request::msg_body_position was "
 	     "called on request without header");
     throw invalid_state();
   }

@@ -37,14 +37,14 @@ http_connection::http_connection()
 {
 }
 
-http_connection::http_connection(int in)
+http_connection::http_connection(int in, sockaddr_in a)
 {
   set_fd(in);
+  set_addr(a);
 }
 
 http_connection::~http_connection()
 {
-  close(fd);
 }
 
 void http_connection::set_fd(int in)
@@ -57,23 +57,12 @@ int http_connection::get_fd() const
   return fd;
 }
 
-void http_connection::expand_read_buffer()
+void http_connection::set_addr(sockaddr_in a)
 {
-  char *buf = new char[BUFSIZ];
-  int ret = read(fd, buf, BUFSIZ);
-  if (ret < 0) {
-    serv_log(string("read error on socket ") + convert_to_string(fd));
-    throw read_error();
-  }
-  if (ret == 0)
-    return ;
-  read_buffer.insert(read_buffer.end(), buf, buf + ret);  
+  addr = a;
 }
 
-bool http_connection::has_full_header() const
+sockaddr_in http_connection::get_addr() const
 {
-  string head_end = "\r\n\r\n";
-  ssize_t n;
-  return search(raw.begin(), raw.end(), head_end.begin(), head_end.end()) != raw.end()
+  return addr;
 }
-

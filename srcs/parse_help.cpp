@@ -132,3 +132,22 @@ string get_conf_token(string &str)
 	str.erase(0, pos);
 	return ret;
 }
+
+
+bool is_digit_string(string &in)
+{
+  for (ssize_t i = 0; i < in.length(); i++) {
+    if (!isdigit(in[i]))
+      return false;
+  }
+  return true;
+}
+
+bool is_hex_string(string &in)
+{
+  for (ssize_t i = 0; i < in.length(); i++) {
+    if (!isxdigit(in[i]))
+      return false;
+  }
+  return true;
+}

@@ -1,3 +1,6 @@
+#ifndef HTTP_CONNECTION_HPP
+#define HTTP_CONNECTION_HPP
+
 #include <string>
 #include <list>
 #include <fcntl.h>
@@ -36,22 +39,15 @@ class http_connection
 {
   int fd;
   sockaddr_in addr;
-  bool read_flag;
-  bool write_flag;
-  vector<char> input_buffer;
 public:
-  class read_error: public exception
-  {
-    const char* what() const throw()
-    {
-      return "Read error";
-    }
-  }
   http_connection();
   http_connection(int fd, sockaddr_in addr);
   ~http_connection();
   void set_fd(int fd);
   int get_fd() const;
-  void expand_read_buffer();
-  bool has_full_header() const;
-}
+  void set_addr(sockaddr_in a);
+  sockaddr_in get_addr() const;
+};
+
+
+#endif

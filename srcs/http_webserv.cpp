@@ -73,21 +73,21 @@ void http_webserv::start()
 			 &(addr.sin_addr.s_addr), cbuf, address_size)
 	    << ":" << ntohs(addr.sin_port);
 	  serv_log(s.str());
-	  corr.add_active_connection(ns);
+	  corr.add_active_connection(ns, addr);
+	  continue;
 	}
-	else
-	  ns = fdarr[i].fd;	
+	else {
+	  http_connection c = corr.get_active_connection(fdarr[i].fd);
+	  ns = c.get_fd();
+	  addr = c.get_addr();
+	}
 	int keep_alive = corr.serve(ns, addr);
-	// while (keep_alive > 0) {
-	//   int keep_alive = corr.serve(ns, addr);
-	// }
 	if (keep_alive <= 0)
 	  corr.remove_active_connection(ns);
-	// close(ns);
 	serv_log("----------------------------------------");
       }
       else if (fdarr[i].revents & POLLNVAL) {
-	serv_log(string("ERROR: incottect fd ") + convert_to_string(fdarr[i].fd));
+	serv_log(string("ERROR: incorrect fd ") + convert_to_string(fdarr[i].fd));
 	http_server& corr = find_server_with_socket(fdarr[i].fd);
 	corr.remove_active_connection(fdarr[i].fd);
       }

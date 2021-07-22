@@ -2,12 +2,21 @@ server
 {
 	# port 64000
 	port 8000
+	port 80
+	# location
+	# {
+	#         path /
+	#         root /home/eugene/nquiz
+	#         index index.php index.html
+	#         method GET POST
+        # 	cgi .php /usr/bin/php-cgi
+	# }
 	location
 	{
-	        path /
-	        root /home/eugene/nquiz
-	        index index.php index.html
-	        method GET POST
-        	cgi .php /usr/bin/php-cgi
+		path /
+		root html/
+		index index.html
+		method GET POST
+		cgi .php /usr/bin/php-cgi
 	}
 }
