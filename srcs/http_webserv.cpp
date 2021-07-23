@@ -332,6 +332,27 @@ http_location parse_location(ifstream &file)
 		    throw http_webserv::invalid_config();
 		  }
 		}
+		else if (ins == "autoindex")
+		{
+			string b = get_conf_token(res);
+			skip_ows(res);
+			if (res != "")
+			{
+				serv_log(string("ERROR: extra information on line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+			}
+			if (b == "off")
+				ret.unset_autoindex();
+			else if (b == "on")
+				ret.set_autoindex();
+			else
+			{
+				serv_log(string("ERROR: extra information on line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+			}
+		}
 		else
 		{
 			serv_log(string ("ERROR: invalid instruction on line: ") +

@@ -128,6 +128,10 @@ void http_server::add_socket_from_hostname(string host, unsigned short port)
   delete ret;
 }
 
+void http_server::process_autoindex(http_request &req, sockaddr_in addr)
+{
+
+}
 
 size_t http_server::num_of_sockets() const
 {
@@ -177,6 +181,10 @@ void http_server::process_request(http_request& msg, sockaddr_in addr)
   if (r.is_cgi_request(msg.get_request_path())) {
     process_cgi(msg, addr);
     return ;
+  }
+  else if (r.is_autoindex(msg.get_request_path()))
+  {
+  	process_autoindex(msg, addr);
   }
   else if (type == "GET") {
     process_get_request(msg, addr);

@@ -254,6 +254,35 @@ bool http_location::is_cgi_request(string t) const
   return false;
 }
 
+bool http_location::is_autoindex(string path)
+{
+	if (auto_index == false)
+		return false;
+	if (path[path.length() - 1] != '/' && is_directory(path))
+		throw directory_uri();
+	list<string>::const_iterator it;
+	for (it = index.begin(); it != index.end(); it++) {
+		string temp = path + *it;
+		if (does_exist(temp))
+			return false;
+	}
+	return true;
+}
+
+string http_location::get_foldername(string s)
+{
+	if (is_path(s)) {
+		if (s[s.length() - 1] != '/')
+			throw directory_uri();
+		return s;
+	}
+	s.erase(s.begin(), s.begin() + path.length());
+	s = root + s;
+	if (is_directory(s))
+		return s;
+	throw not_found();
+}
+
 list<string> http_location::cgi_path(string t) const
 {
   string target = get_file_name(t);

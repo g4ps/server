@@ -99,6 +99,8 @@ public:
   void set_upload_folder(string s);
   bool is_upload_accept() const;
   string get_upload_folder() const;
+  bool is_autoindex(string);
+  string get_foldername(string);
 };
 
 #endif

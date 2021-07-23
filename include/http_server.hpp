@@ -116,6 +116,7 @@ public:
   void add_default_headers(http_responce &resp);
   void process_file_upload(http_request &req);
   void process_delete_request(http_request &req);
+  void process_autoindex(http_request &, sockaddr_in);
 };
 
 string test_page();
