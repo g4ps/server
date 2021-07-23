@@ -16,7 +16,7 @@ server
 		path /
 		root html/
 		autoindex on
-		index index.html
+		index index.html index.php
 		method GET POST
 	#	cgi .php /usr/bin/php-cgi
 	}

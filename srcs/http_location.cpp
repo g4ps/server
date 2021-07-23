@@ -39,8 +39,8 @@ bool http_location::is_path(string s) const
 
 http_location::http_location()
 {
-  // upload_folder = "html/upload/";
-  // upload_accept = true;
+  upload_accept = false;
+  auto_index = false;
 }
 
 http_location::http_location(string s)
@@ -254,10 +254,18 @@ bool http_location::is_cgi_request(string t) const
   return false;
 }
 
-bool http_location::is_autoindex(string path)
+bool http_location::is_autoindex(string s)
 {
 	if (auto_index == false)
 		return false;
+	string path;
+	try {
+	  path = get_folder_name(s);
+	  
+	}
+	catch (not_found &e) {
+	  return false;
+	}
 	if (path[path.length() - 1] != '/' && is_directory(path))
 		throw directory_uri();
 	list<string>::const_iterator it;
@@ -269,12 +277,12 @@ bool http_location::is_autoindex(string path)
 	return true;
 }
 
-string http_location::get_foldername(string s)
+string http_location::get_folder_name(string s)
 {
 	if (is_path(s)) {
 		if (s[s.length() - 1] != '/')
 			throw directory_uri();
-		return s;
+		return root;
 	}
 	s.erase(s.begin(), s.begin() + path.length());
 	s = root + s;

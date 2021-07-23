@@ -1,4 +1,5 @@
 #include <string>
+#include <dirent.h>
 #include <list>
 #include <fcntl.h>
 #include <iostream>
@@ -130,7 +131,51 @@ void http_server::add_socket_from_hostname(string host, unsigned short port)
 
 void http_server::process_autoindex(http_request &req, sockaddr_in addr)
 {
-
+  http_location &r = get_location_from_target(req.get_request_path());
+  http_responce resp(200);
+  string folder_name = r.get_folder_name(req.get_request_path());
+  cout << folder_name << endl;
+  DIR* dir = opendir(folder_name.c_str());
+  if (dir == NULL)
+    return ;
+  dirent *t = readdir(dir);
+  string body;
+  list<string> files;
+  while (t != NULL) {
+    files.push_back(t->d_name);
+    // body += t->d_name;
+    // body += "<br>";
+    t = readdir(dir);
+  }
+  files.sort();
+  body += "<html>\n";
+  body += "<head>\n";
+  body += "<meta charset='utf-8'>\n";
+  body += "<title>Index of";
+  body += "</title>\n";
+  body += "</head>\n";
+  body += "<body>\n";
+  body += "<h1>Index of";
+  body += folder_name;
+  body += "</h1>\n";
+  body += "<br>\n";
+  for (list<string>::const_iterator it = files.begin(); it != files.end();
+       it++) {
+    if (*it == ".")
+      continue;
+    body += "<a href='";
+    body += *it;
+    body += "'>";
+    body += *it;
+    body += "</a>\n";
+    body += "<br>";
+  }
+  body += "</body>";
+  body += "</html>";
+  resp.set_socket(req.get_socket());
+  resp.set_body(body);
+  add_default_headers(resp);
+  resp.write_responce();
 }
 
 size_t http_server::num_of_sockets() const
@@ -182,10 +227,10 @@ void http_server::process_request(http_request& msg, sockaddr_in addr)
     process_cgi(msg, addr);
     return ;
   }
-  else if (r.is_autoindex(msg.get_request_path()))
-  {
-  	process_autoindex(msg, addr);
-  }
+  // else if (r.is_autoindex(msg.get_request_path()))
+  // {
+  // 	process_autoindex(msg, addr);
+  // }
   else if (type == "GET") {
     process_get_request(msg, addr);
   }
@@ -204,12 +249,22 @@ void http_server::process_get_request(http_request& req, sockaddr_in addr)
 {
   try {
     http_location &r = get_location_from_target(req.get_request_path());
+    if (r.is_autoindex(req.get_request_path())) {
+      process_autoindex(req, addr);
+      return ;
+    }
     string file_name = r.get_file_name(req.get_request_path());
     serv_log(string("Path of location: '") + r.get_path() + "'");
     serv_log(string("Requested file: '") + file_name + "'");
     http_responce resp(200);
     add_default_headers(resp);
     resp.set_target_name(file_name);
+    if (file_name.find(".php") == file_name.length() - 4) {
+      resp.add_header_field("Content-type", "text/plain");
+    }
+    if (file_name.find(".svg") == file_name.length() - 4) {
+      resp.add_header_field("Content-type", "image/svg+xml");
+    }
     resp.set_socket(req.get_socket());
     resp.write_responce();
   }
@@ -669,8 +724,12 @@ void http_server::process_file_upload(http_request &req)
 	}
       }
     }
-    if (filename.length() == 0)
+    if (filename.length() == 0) {
+      start = finish;
+      finish = search(start + 1, body.end(),
+		      boundary.begin(), boundary.end());
       continue;
+    }
     vector<char> cont(msg_start, finish - 2);
     serv_log(string("Creating file '") + filename + "' at folder '"+
 	     r.get_upload_folder());
