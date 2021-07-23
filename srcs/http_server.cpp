@@ -155,7 +155,7 @@ void http_server::process_autoindex(http_request &req, sockaddr_in addr)
   body += "</title>\n";
   body += "</head>\n";
   body += "<body>\n";
-  body += "<h1>Index of";
+  body += "<h1>Index of ";
   body += folder_name;
   body += "</h1>\n";
   body += "<br>\n";

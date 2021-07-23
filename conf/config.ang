@@ -26,6 +26,7 @@ server
 		root html/upload/
 		method GET POST
 		upload on
+		autoindex on
 		upload_folder html/upload/
 	}
 }
