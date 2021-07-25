@@ -17,8 +17,6 @@ CPPFLAGS += -g -std=c++98 -pthread
 #includes
 CPPFLAGS += -I. -I$(HEAD_DIR)
 
-CPPFLAGS += -DNOT_SHIT
-
 CPP = g++
 
 $(NAME): $(OBJS) $(HEAD)

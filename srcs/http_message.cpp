@@ -300,9 +300,7 @@ ssize_t http_message::read_nb_block(size_t size, int fd)
   n = read(fd, buf, BUFSIZ);
   if (n < 0) {
     serv_log("Read error: ");
-#ifdef NOT_SHIT
     serv_log(strerror(errno));
-#endif
     close(fd);
     throw invalid_state();
     return 0;
