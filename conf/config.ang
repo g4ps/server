@@ -19,6 +19,7 @@ server
 		index index.html index.php
 		method GET POST
 	#	cgi .php /usr/bin/php-cgi
+		error_page 404 html/error.html
 	}
 	location
 	{

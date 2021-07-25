@@ -440,17 +440,19 @@ void http_server::process_redirect(http_request &in, int status, string target)
 
 void http_server::process_error(http_request &in, int status)
 {
+
   serv_log(string("Processing error '") + convert_to_string(status) + "' on target '"
 	   + in.get_request_target() + "'");
   try {    
     http_responce resp(status);
     resp.set_socket(in.get_socket());
-    if (status == 405) {
-      http_location &r = get_location_from_target(in.get_request_path());
+	  http_location &r = get_location_from_target(in.get_request_path());
+	  if (status == 405) {
       string t = r.compose_allowed_methods();
       resp.add_header_field("Accept", t);
     }
-    string err_target = get_error_target_name(in.get_request_path());    
+    string err_target;
+    err_target = r.get_error_page(status);
     if (err_target.length() == 0) {
       resp.set_body(get_default_err_page(status));      
     }

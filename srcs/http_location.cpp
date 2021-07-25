@@ -343,3 +343,11 @@ void http_location::set_upload_folder(string s)
     s += "/";
   upload_folder = s;  
 }
+
+string http_location::get_error_page(int status)
+{
+	string ret;
+	if (error_pages.find(status) == error_pages.end())
+		return "";
+	return error_pages.find(status)->second;
+}

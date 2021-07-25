@@ -332,6 +332,33 @@ http_location parse_location(ifstream &file)
 		    throw http_webserv::invalid_config();
 		  }
 		}
+		else if (ins == "error_page")
+		{
+			string num = get_conf_token(res);
+			string page = get_conf_token(res);
+			if (!is_digit_string(num))
+			{
+				serv_log(string("ERROR: bad error value at line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+			}
+			if (!does_exist(page))
+			{
+				serv_log(string("ERROR: error page does not exist at line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+
+			}
+			if (num.length() != 3)
+			{
+				serv_log(string("ERROR: invalid error status at line: ") +
+						 convert_to_string(line_num));
+				throw http_webserv::invalid_config();
+			}
+
+			int status = atoi(num.c_str());
+			ret.add_error_page(status, page);
+		}
 		else if (ins == "autoindex")
 		{
 			string b = get_conf_token(res);

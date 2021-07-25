@@ -101,6 +101,7 @@ public:
   string get_upload_folder() const;
   bool is_autoindex(string);
   string get_folder_name(string);
+  string get_error_page(int status);
 };
 
 #endif
