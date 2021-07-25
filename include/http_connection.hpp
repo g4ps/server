@@ -25,6 +25,7 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <poll.h>
+#include <ctime>
 
 #include "parse_help.hpp"
 #include "http_message.hpp"
@@ -37,8 +38,14 @@ using namespace std;
 
 class http_connection
 {
+  time_t init_time;
   int fd;
   sockaddr_in addr;
+  vector<char> buffer;
+  bool kind;
+  ssize_t left_to_process;
+  http_request *temp_request;
+  http_responce *temp_responce;
 public:
   http_connection();
   http_connection(int fd, sockaddr_in addr);
@@ -47,6 +54,11 @@ public:
   int get_fd() const;
   void set_addr(sockaddr_in a);
   sockaddr_in get_addr() const;
+  void expand_buffer();
+  bool has_header() const;
+  void form_request_head();
+  void form_request_msg();
+  http_request get_request();
 };
 
 

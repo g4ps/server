@@ -35,17 +35,12 @@ void http_request::recieve()
   if (!is_fd_valid())
     throw invalid_function_call();
   get_header();
-  // print_raw();
   parse_head();
   if (get_header_value("Content-Length").first ||
       get_header_value("Transfer-Encoding").first) {
-    // serv_log("Requset has a body; Parsing it...");
     get_msg_body();
   }
   serv_log("Request was parsed successfully");
-  // else if (raw.find("\r\n\r\n") + 2 != raw.length()) {
-  //   //error here
-  // }
   print();
 }
 
@@ -228,8 +223,8 @@ void http_request::get_msg_body()
 	  return ;
 	//getting the whole chunk
 	//2 is the size of crlf
-	while (raw.size() < next_chunk_position + chunk_head_end + 2 + chunk_size)
-	  read_block();
+	// while (raw.size() < next_chunk_position + chunk_head_end + 2 + chunk_size)
+	//   read_block();
 	body.insert(body.end(), raw.begin() + next_chunk_position + chunk_head_end + 2,
 		    raw.begin() + next_chunk_position + chunk_head_end + 2 + chunk_size);
 	next_chunk_position = next_chunk_position + chunk_head_end + 2 + chunk_size + 2;

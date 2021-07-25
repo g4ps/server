@@ -11,6 +11,92 @@ http_webserv::http_webserv()
 {
 }
 
+void http_webserv::start1()
+{
+  while (1) {
+    deque<int> sockets;
+    list<http_server>::iterator it;
+    for (it = servers.begin(); it != servers.end(); it++) {
+      deque<int> temp = it->get_sockets();
+      sockets.insert(sockets.begin(), temp.begin(), temp.end());
+    }
+    pollfd *fdarr = new pollfd[sockets.size()];
+    for (size_t i = 0; i < sockets.size(); i++) {
+      fdarr[i].fd = sockets[i];
+      fdarr[i].events = 0;
+      fdarr[i].events |= POLLRDNORM;
+    }    
+    if (poll(fdarr, sockets.size(), -1) == -1) {
+      char *str = strerror(errno);
+      serv_log(string("ERROR: poll return POLLERR: ") + str);
+      throw process_error();
+    }
+    for (size_t i = 0; i < sockets.size(); i++) {
+      if (fdarr[i].revents & POLLERR) {
+	serv_log(string("ERROR: fd ") + convert_to_string(fdarr[i].fd) + " returned POLLERR");
+	http_server& corr = find_server_with_socket(fdarr[i].fd);
+	if (corr.is_active_connection(fdarr[i].fd)) {
+	  serv_log("It is an active connection; closing...");
+	  corr.remove_active_connection(fdarr[i].fd);
+	}
+      }
+      else if (fdarr[i].revents & POLLHUP) {
+	serv_log(string("Hungup on descriptor " ) + convert_to_string(fdarr[i].fd));
+	http_server& corr = find_server_with_socket(fdarr[i].fd);
+	if (corr.is_active_connection(fdarr[i].fd)) {
+	  corr.remove_active_connection(fdarr[i].fd);
+	  cout << "Closed errored connection: " << fdarr[i].fd << endl;
+	}
+      }
+      else if (fdarr[i].revents & POLLRDNORM) {
+	serv_log("----------------------------------------");
+	serv_log("New Connection");	
+	sockaddr_in addr;
+	socklen_t address_size = sizeof(sockaddr_in);
+	http_server& corr = find_server_with_socket(fdarr[i].fd);
+	int ns;
+	if (!corr.is_active_connection(fdarr[i].fd)) {
+	  ns = accept(fdarr[i].fd, (sockaddr*)&addr, &address_size);
+	  if (ns < 0) {
+	    serv_log(string("accept error: ") + strerror(errno));
+	    throw process_error();
+	  }
+	  if (fcntl(ns, F_SETFL, O_NONBLOCK) == -1) {
+	    serv_log(string("fcntl error: ") + strerror(errno));
+	    throw process_error();
+	  }
+	  char cbuf[100];
+	  stringstream s;
+	  s << "Connection established on fd (" << ns << ")";
+	  s << " from host "
+	    << inet_ntop(AF_INET,
+			 &(addr.sin_addr.s_addr), cbuf, address_size)
+	    << ":" << ntohs(addr.sin_port);
+	  serv_log(s.str());
+	  corr.add_active_connection(ns, addr);
+	  continue;
+	}
+	else {
+	  http_connection c = corr.get_active_connection(fdarr[i].fd);
+	  ns = c.get_fd();
+	  addr = c.get_addr();
+	}
+	int keep_alive = corr.serve(ns, addr);
+	if (keep_alive <= 0)
+	  corr.remove_active_connection(ns);
+	serv_log("----------------------------------------");
+      }
+      else if (fdarr[i].revents & POLLNVAL) {
+	serv_log(string("ERROR: incorrect fd ") + convert_to_string(fdarr[i].fd));
+	http_server& corr = find_server_with_socket(fdarr[i].fd);
+	corr.remove_active_connection(fdarr[i].fd);
+      }
+
+    }
+    delete [] fdarr;
+  }
+}
+
 void http_webserv::start()
 {
   while (1) {

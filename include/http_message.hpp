@@ -34,6 +34,7 @@ protected:
   ssize_t read_block(size_t size = BUFSIZ, int fd = -1);
   ssize_t read_nb_block(size_t size = BUFSIZ, int fd = -1);
   size_t msg_body_position() const;
+
 public:
   http_message();
   //http_message(string s, int inp_fd = -1);
@@ -73,6 +74,10 @@ public:
   void print_raw();
   void set_active();
   vector<char>& get_body();
+  void set_raw(vector<char> &r);
+  void append_raw(vector<char> &r);
+  void append_body(vector<char> &r);
+  size_t msg_body_size() const;
 };
 
 #endif

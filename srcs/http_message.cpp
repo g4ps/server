@@ -361,3 +361,23 @@ vector<char>& http_message::get_body()
 {
   return body;
 }
+
+void http_message::set_raw(vector<char> &inp)
+{
+  raw.swap(inp);
+}
+
+void http_message::append_raw(vector<char> &inp)
+{
+  raw.insert(raw.end(), inp.begin(), inp.end());  
+}
+
+void http_message::append_body(vector<char> &inp)
+{
+  body.insert(body.end(), inp.begin(), inp.end());
+}
+
+size_t http_message::msg_body_size() const
+{
+  return raw.size() - msg_body_position();
+}
