@@ -65,12 +65,27 @@ bool http_location::is_method_accepted(string s)
 
 void http_location::add_redirect(int status, string dir)
 {
+  if (!redirection.empty())
+    throw invalid_state();
   if (!redirection.insert(pair<int, string>(status, dir)).second){
     serv_log(string("Invalid redirect '")
 	     + convert_to_string(status)
 	     + "' on target '" + dir + "': already exists");
     throw invalid_state();
   }  
+}
+
+bool http_location::is_redirect()
+{
+  return !redirection.empty();
+}
+
+pair<int, string>
+http_location::get_redirect()
+{
+  if (redirection.empty())
+    throw invalid_state();
+  return *(redirection.begin());
 }
 
 void http_location::set_path(string s)

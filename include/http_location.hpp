@@ -102,6 +102,8 @@ public:
   bool is_autoindex(string);
   string get_folder_name(string);
   string get_error_page(int status);
+  bool is_redirect();
+  pair<int, string> get_redirect();
 };
 
 #endif

@@ -220,6 +220,11 @@ void http_server::process_request(http_request& msg, sockaddr_in addr)
 {
   string type = msg.get_method();
   http_location &r = get_location_from_target(msg.get_request_path());
+  if (r.is_redirect()) {
+    pair<int, string> t = r.get_redirect();
+    process_redirect(msg, t.first, t.second);//+ msg.get_request_path());
+    return;
+  }
   if (!r.is_method_accepted(msg.get_method())) {
     throw method_not_allowed();
   }

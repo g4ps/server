@@ -56,6 +56,15 @@ void http_responce::set_status(int st)
   case 302:
     reason_phrase = "Found";
     break;
+  case 303:
+    reason_phrase = "See Other";
+    break;
+  case 305:
+    reason_phrase = "Use proxy";
+    break;
+  case 307:
+    reason_phrase = "Temporary Redirect";
+    break;
   case 400:
     reason_phrase = "Bad Request";
     break;

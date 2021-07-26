@@ -359,6 +359,18 @@ http_location parse_location(ifstream &file)
 			int status = atoi(num.c_str());
 			ret.add_error_page(status, page);
 		}
+		else if (ins == "redirect") {
+		  string num = get_conf_token(res);
+		  string dir = get_conf_token(res);
+		  int status = atoi(num.c_str());
+		  if (!is_digit_string(num) || num.length() != 3 || status < 300 || status > 307) {
+		    serv_log(string("ERROR: bad redirect value '") + num + "' at line "+
+			     convert_to_string(line_num));
+		    throw http_webserv::invalid_config();
+		  }
+		  ret.add_redirect(status, dir);
+		  
+		}
 		else if (ins == "autoindex")
 		{
 			string b = get_conf_token(res);
