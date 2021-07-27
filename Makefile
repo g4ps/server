@@ -12,12 +12,12 @@ SRCS := $(SRCS:%=$(SRCS_DIR)%)
 OBJS := $(SRCS:.cpp=.o)
 
 #CPPFLAGS += -Wall -Werror -Wextra
-CPPFLAGS += -g -std=c++98 -pthread
+CPPFLAGS += -std=c++98 -pthread
 
 #includes
 CPPFLAGS += -I. -I$(HEAD_DIR)
 
-CPP = g++
+CPP = clang++
 
 $(NAME): $(OBJS) $(HEAD)
 	$(CPP) $(CPPFLAGS) $(OBJS) -o $(NAME)
