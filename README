@@ -1,0 +1,4 @@
+Basic HTTP-server with functionality for usage with CGI
+Initially was created as a study project for 21 school
+Configuration is pretty self-explanatory, folder 'conf' contains examples with all use cases
+Project was written in collaboration with @alokhamora

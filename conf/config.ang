@@ -1,22 +1,28 @@
 server
 {
 	# port 64000
+	port 80
 	port 8000
 	location
 	{
 		path /
+		cgi .sh /bin/bash
+		cgi .php /usr/bin/php-cgi
+		cgi .py /usr/bin/python3.8
+		method GET POST
 		root html/
 		autoindex on
 		index index.html index.php
-		method GET POST
 		error_page 404 /error.html
 	}
 	location
 	{
-		path /upload
+		cgi .php /usr/bin/php-cgi
+		index index.php
+		path /dasfads
 		root html/upload/
-		method GET POST DELETE
 		upload on
+		method GET POST
 		autoindex on
 		upload_folder html/upload/
 	}

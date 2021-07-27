@@ -1,6 +1,6 @@
 NAME = webserv
 CXX = clang++
-#CXX = g++
+CXX = g++
 
 HEAD_DIR = include/
 HEAD = http_message.hpp parse_help.hpp http_server.hpp http_responce.hpp http_webserv.hpp http_utils.hpp http_location.hpp http_connection.hpp
@@ -18,7 +18,7 @@ CPPFLAGS += -std=c++98 -pthread
 
 #includes
 CPPFLAGS += -I. -I$(HEAD_DIR)
-#CPPFLAGS += -g
+CPPFLAGS += -g
 
 
 
