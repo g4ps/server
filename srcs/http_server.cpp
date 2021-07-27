@@ -606,11 +606,15 @@ http_location& http_server::get_location_from_target(string s)
 
 void http_server::check_location_for_correctness(http_location in)
 {
-  //TODO
+  if (in.get_path() == "") {
+    serv_log("ERROR: Location does not have a path");
+    throw init_error();
+  }
 }
 
 void http_server::add_location(http_location in)
 {
+  check_location_for_correctness(in);
   locations.push_back(in);
 }
 

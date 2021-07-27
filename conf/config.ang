@@ -39,7 +39,6 @@ server
 	port 8088
 	location
 	{
-		path /
 		method GET POST DELETE
 		redirect 307 https://google.com
 	}
