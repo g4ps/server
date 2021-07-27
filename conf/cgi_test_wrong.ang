@@ -1,0 +1,12 @@
+server {
+       location{
+       
+		pat /
+		cgi .php /usr/bin/php-cgi1
+		root /home/eugene/nquiz
+		Methods GET POST
+		autoindex off
+		upload off
+		}
+       
+}

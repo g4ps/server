@@ -451,8 +451,8 @@ void http_server::process_error(http_request &in, int status)
   try {    
     http_responce resp(status);
     resp.set_socket(in.get_socket());
-	  http_location &r = get_location_from_target(in.get_request_path());
-	  if (status == 405) {
+    http_location &r = get_location_from_target(in.get_request_path());
+    if (status == 405) {
       string t = r.compose_allowed_methods();
       resp.add_header_field("Accept", t);
     }
@@ -462,7 +462,7 @@ void http_server::process_error(http_request &in, int status)
       resp.set_body(get_default_err_page(status));      
     }
     else {
-      resp.set_target_name(err_target);
+      resp.set_target_name(r.get_file_name(err_target));
     }
     resp.write_responce();
   }

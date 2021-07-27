@@ -342,13 +342,13 @@ http_location parse_location(ifstream &file)
 						 convert_to_string(line_num));
 				throw http_webserv::invalid_config();
 			}
-			if (!does_exist(page))
-			{
-				serv_log(string("ERROR: error page does not exist at line: ") +
-						 convert_to_string(line_num));
-				throw http_webserv::invalid_config();
+			// if (!does_exist(page))
+			// {
+			// 	serv_log(string("ERROR: error page does not exist at line: ") +
+			// 			 convert_to_string(line_num));
+			// 	throw http_webserv::invalid_config();
 
-			}
+			// }
 			if (num.length() != 3)
 			{
 				serv_log(string("ERROR: invalid error status at line: ") +
@@ -473,8 +473,18 @@ void http_webserv::parse_config(string filename)
 		if (zero_str(res))
 			continue;
 		trim_wsp(res);
-		if (res == "server")
-			add_server(parse_server(file));
-
+		if (res == "server") {
+		  http_server tt = parse_server(file);
+		  if (tt.num_of_sockets() == 0) {
+		    serv_log("ERROR: server has got to have at least 1 connection at line: " +
+			     convert_to_string(line_num));
+		    throw http_webserv::invalid_config();
+		  }
+		  add_server(tt);
+		}
+		else if (res != "") {
+		  serv_log("ERROR: Some unrecogniseble stuff at line: " + convert_to_string(line_num));
+		  throw invalid_config();
+		}
 	}
 }

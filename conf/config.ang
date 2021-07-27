@@ -2,7 +2,6 @@ server
 {
 	# port 64000
 	port 8000
-	port 80
 	location
 	{
 		path /
@@ -10,7 +9,7 @@ server
 		autoindex on
 		index index.html index.php
 		method GET POST
-		error_page 404 html/error.html
+		error_page 404 /error.html
 	}
 	location
 	{
