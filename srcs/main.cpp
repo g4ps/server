@@ -32,6 +32,7 @@ main(int argc, char **argv)
   // string k="DOOR%20STUCK!%20DOOR%20STUCK!-VqB1uoDTdKM.mp4";
   // cout << uri_to_string(k) << endl;
   // return 0;
+  //set_log("serv_log");
   string conf_name = "conf/config.ang";
   if (argc == 2) {
     conf_name = argv[1];

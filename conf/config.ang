@@ -21,7 +21,7 @@ server
 		index index.php
 		path /dasfads
 		root html/upload/
-		upload on
+		upload off
 		method GET POST
 		autoindex on
 		upload_folder html/upload/

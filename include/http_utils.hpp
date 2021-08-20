@@ -9,6 +9,7 @@
 
 using namespace std;
 
+void set_log(string s);
 void serv_log(string s);
 string convert_to_string(int);
 string convert_to_string(size_t);

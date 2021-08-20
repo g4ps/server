@@ -21,9 +21,23 @@
 #include "http_server.hpp"
 #include "http_utils.hpp"
 
+using namespace std;
+
+ostream *my_log = &std::cout;
+
+void set_log(string str)
+{
+  ofstream *temp = new ofstream;
+  temp->open(str.c_str());
+  if (!temp->good()) {
+    cerr << "ERROR: Cannot open log file\n";
+  }
+  my_log = temp;
+}
+
 void serv_log(std::string out)
 {
-  std::cout<<out<<std::endl;
+  (*my_log)<<out<<std::endl;
 }
 
 string convert_to_string(size_t arg)
